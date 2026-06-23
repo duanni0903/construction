@@ -358,20 +358,24 @@ function saveLocal(){try{localStorage.setItem(LOCAL_KEY,JSON.stringify(state));}
 function loadLocal(){try{const d=localStorage.getItem(LOCAL_KEY);if(d){const p=JSON.parse(d);Object.assign(state,p);}}catch(e){}}
 
 /* ══ API 工具 ══ */
-async function apiFetch(params,retries=2){
-  if(!state.apiUrl)throw new Error('no_api');
-  const url=state.apiUrl+'?'+new URLSearchParams(params);
-  for(let i=0;i<=retries;i++){
-    try{const r=await fetch(url,{cache:'no-cache'});if(!r.ok)throw new Error('HTTP '+r.status);return await r.json();}
-    catch(e){if(i===retries)throw e;await new Promise(r=>setTimeout(r,600*(i+1)));}
-  }
+/* JSONP 呼叫（繞過 CORS） */
+function jsonp(params){
+  return new Promise((resolve,reject)=>{
+    if(!state.apiUrl){reject(new Error('no_api'));return;}
+    const cbName='_cb'+Date.now()+'_'+Math.floor(Math.random()*9999);
+    const timer=setTimeout(()=>{delete window[cbName];reject(new Error('timeout'));},15000);
+    window[cbName]=function(data){clearTimeout(timer);delete window[cbName];resolve(data);};
+    const p=new URLSearchParams({...params,callback:cbName});
+    const s=document.createElement('script');
+    s.src=state.apiUrl+'?'+p.toString();
+    s.onerror=()=>{clearTimeout(timer);delete window[cbName];reject(new Error('script error'));};
+    document.head.appendChild(s);
+    setTimeout(()=>s.remove(),16000);
+  });
 }
-async function apiPost(data,retries=2){
-  if(!state.apiUrl)throw new Error('no_api');
-  for(let i=0;i<=retries;i++){
-    try{const r=await fetch(state.apiUrl,{method:'POST',body:JSON.stringify(data),headers:{'Content-Type':'application/json'}});if(!r.ok)throw new Error('HTTP '+r.status);return await r.json();}
-    catch(e){if(i===retries)throw e;await new Promise(r=>setTimeout(r,600*(i+1)));}
-  }
+async function apiFetch(params){return jsonp(params);}
+async function apiPost(data){
+  return jsonp({action:'write',data:encodeURIComponent(JSON.stringify(data))});
 }
 
 /* ══ 連線狀態 UI ══ */
