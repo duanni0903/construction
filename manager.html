@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工程管理系統 — 主管</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1B2A3B;--blue:#185FA5;--blue-l:#E6F1FB;--blue-m:#B5D4F4;
+  --green:#0F6E56;--green-l:#E1F5EE;--amber:#854F0B;--amber-l:#FAEEDA;
+  --red:#A32D2D;--red-l:#FCEBEB;--purple:#3C3489;--purple-l:#EEEDFE;
+  --bg:#F2F4F7;--surface:#fff;--border:#DDE1E9;--border-l:#EEF0F5;
+  --text:#18232F;--text2:#4A5568;--text3:#718096;--text4:#A0AEC0;
+  --r:10px;--r-sm:6px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
+.topnav{background:var(--navy);padding:0 20px;height:52px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.logo{display:flex;align-items:center;gap:8px;color:#fff;font-size:14px;font-weight:600;letter-spacing:.01em}
+.logo-icon{width:28px;height:28px;background:var(--blue);border-radius:6px;display:flex;align-items:center;justify-content:center}
+.breadcrumb{display:flex;align-items:center;gap:6px;margin-left:12px;padding-left:12px;border-left:1px solid rgba(255,255,255,.15)}
+.bc-item{font-size:13px;color:rgba(255,255,255,.5);cursor:pointer;transition:color .15s}
+.bc-item:hover{color:rgba(255,255,255,.85)}
+.bc-sep{color:rgba(255,255,255,.25);font-size:12px}
+.bc-cur{font-size:13px;color:#fff;font-weight:500}
+.topnav-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.role-badge{font-size:11px;background:rgba(24,95,165,.3);color:#B5D4F4;border:1px solid rgba(24,95,165,.4);border-radius:20px;padding:3px 10px;font-weight:500}
+.nav-link{font-size:12px;color:rgba(255,255,255,.6);padding:5px 10px;border-radius:var(--r-sm);cursor:pointer;display:inline-flex;align-items:center;gap:5px;border:1px solid transparent;transition:all .15s;background:transparent;font-family:inherit;white-space:nowrap}
+.nav-link:hover{background:rgba(255,255,255,.1);color:#fff}
+.nav-link.active{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.15)}
+.user-pill{display:flex;align-items:center;gap:6px;font-size:12px;color:rgba(255,255,255,.65);cursor:pointer;padding:5px 10px;border:1px solid rgba(255,255,255,.15);border-radius:var(--r-sm);background:transparent;font-family:inherit;transition:all .15s}
+.user-pill:hover{background:rgba(255,255,255,.1);color:#fff}
+.btn{border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);padding:7px 13px;font-size:12px;cursor:pointer;color:var(--text2);display:inline-flex;align-items:center;gap:5px;transition:all .15s;font-family:inherit;white-space:nowrap;font-weight:500}
+.btn:hover{background:var(--bg);border-color:var(--text4)}
+.btn.pri{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn.pri:hover{background:#0C447C}
+.btn.success{background:var(--green);color:#fff;border-color:var(--green)}
+.btn.success:hover{background:#085041}
+.btn.ghost{background:transparent;border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.7)}
+.btn.ghost:hover{background:rgba(255,255,255,.1);color:#fff}
+.btn.sm{padding:4px 9px;font-size:11px}
+.btn.danger{color:var(--red);border-color:#F7C1C1}
+.btn.danger:hover{background:var(--red-l)}
+.page{display:none;max-width:1100px;margin:0 auto;padding:20px}
+.page.active{display:block}
+.page-hd{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap}
+.page-title{font-size:20px;font-weight:700;color:var(--text);letter-spacing:-.01em}
+.page-sub{font-size:13px;color:var(--text3);margin-top:4px}
+.badge{display:inline-flex;align-items:center;gap:3px;font-size:11px;padding:3px 9px;border-radius:20px;font-weight:600;white-space:nowrap}
+.b-plan{background:var(--purple-l);color:var(--purple)}
+.b-bid{background:var(--amber-l);color:var(--amber)}
+.b-work{background:var(--blue-l);color:var(--blue)}
+.b-chk{background:var(--green-l);color:var(--green)}
+.b-pending{background:var(--amber-l);color:var(--amber)}
+.b-approved{background:var(--green-l);color:var(--green)}
+.b-rejected{background:var(--red-l);color:var(--red)}
+.av{border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:600;flex-shrink:0}
+.av-a{background:#C8DEFA;color:#0C447C}
+.av-b{background:#A8EDD8;color:#085041}
+.av-c{background:#F5C6D0;color:#72243E}
+.av-d{background:#FAD7A0;color:#633806}
+.av-e{background:#D5D2F9;color:#3C3489}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px}
+.stat-val{font-size:26px;font-weight:700;color:var(--text);line-height:1;margin-bottom:4px}
+.stat-lbl{font-size:12px;color:var(--text3);font-weight:500}
+.stat-sub{font-size:11px;color:var(--text4);margin-top:4px}
+.filter-bar{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+.filter-label{font-size:11px;color:var(--text4);font-weight:500;padding:0 2px}
+.filter-sep{width:1px;height:18px;background:var(--border);margin:0 4px}
+.chip{font-size:12px;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--text3);cursor:pointer;font-weight:500;transition:all .15s;display:inline-flex;align-items:center;gap:4px;font-family:inherit}
+.chip:hover{border-color:var(--text4);color:var(--text)}
+.chip.active{background:var(--blue-l);color:var(--blue);border-color:var(--blue)}
+.chip.mgr-active{background:var(--purple-l);color:var(--purple);border-color:var(--purple)}
+.mgr-filter-bar{display:none;align-items:center;gap:8px;background:var(--purple-l);border:1px solid #C5C2F0;border-radius:var(--r-sm);padding:8px 12px;margin-bottom:10px;font-size:13px;color:var(--purple)}
+.mgr-filter-bar.show{display:flex}
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead{background:var(--bg)}
+th{padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:var(--text3);border-bottom:1px solid var(--border);white-space:nowrap;letter-spacing:.03em;text-transform:uppercase}
+th.r,td.r{text-align:right}
+td{padding:11px 14px;border-bottom:1px solid var(--border-l);color:var(--text);vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tr.proj-row{cursor:pointer;transition:background .12s}
+tr.proj-row:hover{background:#F8FAFE}
+tr.proj-row:hover .name-text{color:var(--blue)}
+.name-cell{display:flex;align-items:center;gap:7px;white-space:normal;word-break:break-all}
+.name-text{font-weight:600;color:var(--text);transition:color .15s}
+.attach-pill{font-size:10px;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:1px 6px;color:var(--text4);flex-shrink:0}
+.mgr-chip{display:inline-flex;align-items:center;gap:4px;cursor:pointer;border-radius:20px;padding:3px 8px 3px 3px;border:1px solid transparent;transition:all .15s}
+.mgr-chip:hover{background:var(--purple-l);border-color:#C5C2F0}
+.mgr-chip.hl{background:var(--purple-l);border-color:#C5C2F0}
+.prog-cell{display:flex;align-items:center;gap:6px}
+.prog-track{flex:1;height:5px;background:var(--border-l);border-radius:5px;overflow:hidden;min-width:40px}
+.prog-fill{height:100%;border-radius:5px}
+.prog-num{font-size:11px;color:var(--text3);width:26px;text-align:right;flex-shrink:0}
+.diff-pos{color:var(--green);font-weight:600}
+.diff-neg{color:var(--red);font-weight:600}
+.diff-zero{color:var(--text4)}
+.detail-hero{background:var(--navy);border-radius:var(--r);padding:20px 24px;margin-bottom:16px;color:#fff}
+.detail-hero-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.detail-name{font-size:20px;font-weight:700;color:#fff;margin-bottom:6px;letter-spacing:-.01em}
+.detail-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.date-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.ds{background:rgba(255,255,255,.08);border-radius:var(--r-sm);padding:12px 14px;border:1px solid rgba(255,255,255,.08)}
+.ds-lbl{font-size:10px;color:rgba(255,255,255,.5);margin-bottom:6px;display:flex;align-items:center;gap:4px;font-weight:500;letter-spacing:.04em;text-transform:uppercase}
+.ds-val{font-size:15px;font-weight:600;color:#fff}
+.metrics-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:13px 16px}
+.metric-lbl{font-size:11px;color:var(--text3);font-weight:500;margin-bottom:5px;letter-spacing:.03em;text-transform:uppercase}
+.metric-val{font-size:20px;font-weight:700;color:var(--text);line-height:1}
+.big-bar-wrap{margin-bottom:16px}
+.big-bar-lbl{display:flex;justify-content:space-between;font-size:12px;color:var(--text3);margin-bottom:5px}
+.big-bar{height:8px;background:var(--border-l);border-radius:8px;overflow:hidden;border:1px solid var(--border)}
+.big-fill{height:100%;border-radius:8px;transition:width .5s}
+.tab-bar{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:16px}
+.tab{font-size:13px;padding:8px 16px;border:none;background:transparent;color:var(--text3);cursor:pointer;font-weight:500;font-family:inherit;border-bottom:2px solid transparent;margin-bottom:-1px;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.section-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px}
+.section-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.section-title{font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em}
+.task-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-l)}
+.task-item:last-child{border-bottom:none}
+.task-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.task-name{flex:1;font-size:13px;font-weight:500;color:var(--text)}
+.task-mini-bar{flex:0 0 56px;height:4px;background:var(--border-l);border-radius:4px;overflow:hidden}
+.task-mini-fill{height:100%;border-radius:4px;background:var(--blue)}
+.task-pct{font-size:11px;color:var(--text3);width:30px;text-align:right}
+.task-due{font-size:11px;white-space:nowrap}
+.file-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-l)}
+.file-item:last-child{border-bottom:none}
+.file-ico{width:38px;height:38px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.ico-pdf{background:#FCEBEB;color:#791F1F}.ico-dwg{background:var(--purple-l);color:var(--purple)}
+.ico-doc{background:var(--blue-l);color:var(--blue)}.ico-xls{background:var(--green-l);color:var(--green)}
+.ico-img{background:var(--amber-l);color:var(--amber)}.ico-other{background:var(--bg);color:var(--text4)}
+.file-info{flex:1;min-width:0}
+.file-name{font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:2px}
+.file-meta{font-size:11px;color:var(--text4)}
+.budget-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.budget-item{background:var(--bg);border-radius:var(--r-sm);padding:14px;text-align:center;border:1px solid var(--border-l)}
+.budget-lbl{font-size:11px;color:var(--text3);font-weight:500;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+.budget-val{font-size:18px;font-weight:700;color:var(--text)}
+.eng-hero{display:flex;align-items:center;gap:14px;background:var(--bg);border-radius:var(--r-sm);padding:14px;border:1px solid var(--border-l)}
+.approval-item{display:flex;align-items:flex-start;gap:14px;padding:14px 0;border-bottom:1px solid var(--border-l)}
+.approval-item:last-child{border-bottom:none}
+.approval-info{flex:1}
+.approval-name{font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;letter-spacing:-.01em}
+.approval-meta{font-size:12px;color:var(--text4);margin-bottom:6px}
+.approval-note{font-size:13px;color:var(--text2);background:var(--bg);border-radius:var(--r-sm);padding:8px 12px;border:1px solid var(--border-l)}
+.readonly-note{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--text4);background:var(--bg);border:1px solid var(--border-l);border-radius:20px;padding:2px 8px}
+.alert{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:var(--r-sm);margin-bottom:16px;font-size:13px;line-height:1.5}
+.alert-info{background:var(--blue-l);border:1px solid var(--blue-m);color:var(--blue)}
+.empty{text-align:center;padding:2.5rem;color:var(--text4)}
+.empty i{font-size:28px;display:block;margin-bottom:10px}
+@media(max-width:680px){
+  .stats,.metrics-row{grid-template-columns:1fr 1fr}
+  .date-strip,.budget-grid{grid-template-columns:1fr}
+  .page{padding:12px}.topnav{padding:0 12px}.nav-link{display:none}
+}
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <div class="logo">
+    <div class="logo-icon"><i class="ti ti-building-factory-2" style="color:#fff;font-size:15px"></i></div>
+    工程管理系統
+  </div>
+  <div class="breadcrumb" id="breadcrumb"><span class="bc-cur">工程專案</span></div>
+  <div class="topnav-right">
+    <button class="nav-link active" id="nl-list" onclick="goPage('list')"><i class="ti ti-layout-dashboard"></i> 專案總覽</button>
+    <button class="nav-link" id="nl-approve" onclick="goPage('approve')"><i class="ti ti-clipboard-check"></i> 審核申請 <span id="approve-badge" style="display:none;background:#E24B4A;color:#fff;border-radius:20px;padding:0 6px;font-size:10px;margin-left:2px"></span></button>
+    <span class="role-badge"><i class="ti ti-building-community" style="font-size:11px"></i> 主管</span>
+    <button class="user-pill" onclick="window.location.href='login.html'"><i class="ti ti-user-circle" style="font-size:14px"></i> 陳所長</button>
+  </div>
+</nav>
+
+<!-- 主列表頁 -->
+<div class="page active" id="page-list">
+  <div class="page-hd">
+    <div>
+      <div class="page-title">工程專案執行狀況</div>
+      <div class="page-sub" id="list-sub"></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <span class="readonly-note"><i class="ti ti-eye"></i> 主管視角為唯讀</span>
+    </div>
+  </div>
+  <div class="stats" id="stats"></div>
+  <div class="filter-bar" id="filter-bar"></div>
+  <div class="mgr-filter-bar" id="mgr-bar">
+    <div class="av" id="mgr-bar-av" style="width:24px;height:24px;font-size:11px"></div>
+    <span id="mgr-bar-lbl"></span>
+    <button class="btn sm" onclick="clearMgr()" style="margin-left:auto"><i class="ti ti-x"></i> 清除篩選</button>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th style="width:40px">#</th>
+        <th style="min-width:260px">專案名稱</th>
+        <th style="width:90px">負責人</th>
+        <th style="width:84px">狀態</th>
+        <th style="width:106px">預計進度</th>
+        <th style="width:106px">實際進度</th>
+        <th style="width:48px" class="r">落差</th>
+        <th style="width:96px" class="r">預算金額</th>
+        <th style="width:96px" class="r">契約金額</th>
+        <th style="width:88px">完工日</th>
+        <th style="width:60px">詳情</th>
+      </tr></thead>
+      <tbody id="proj-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 審核申請頁 -->
+<div class="page" id="page-approve">
+  <div class="page-hd">
+    <div>
+      <div class="page-title">新專案審核申請</div>
+      <div class="page-sub">工程師送出的新專案申請，由主管核准或退回</div>
+    </div>
+  </div>
+  <div class="section-card" id="approve-content"></div>
+</div>
+
+<!-- 詳情頁 -->
+<div class="page" id="page-detail">
+  <div id="detail-hero-wrap"></div>
+  <div class="metrics-row" id="detail-metrics"></div>
+  <div id="detail-prog-bar"></div>
+  <div class="tab-bar" id="detail-tabs"></div>
+  <div id="detail-content"></div>
+</div>
+
+<script>
+const ENG={
+  u3:{name:'王大偉',role:'土木工程師',cls:'av-c'},
+  u5:{name:'李國豪',role:'安全工程師',cls:'av-e'},
+  u6:{name:'張雅婷',role:'建築師',    cls:'av-d'},
+};
+const PROJECTS=[
+  {id:1,name:'台北劍潭大樓5樓辦公室改裝',mgr:'u3',status:'施工',    plan:60, real:40, budget:1200000,contract:990000, startDate:'2025-04-01',endDate:'2025-09-30',duration:183,
+   tasks:[
+     {name:'拆除舊有隔間',progress:100,due:'2025-06-10',status:'done'},
+     {name:'水電管線配置',progress:80, due:'2025-07-05',status:'doing'},
+     {name:'新隔間牆施作',progress:30, due:'2025-07-20',status:'doing'},
+     {name:'天花板工程',  progress:0,  due:'2025-08-01',status:'todo'},
+     {name:'地板材料鋪設',progress:0,  due:'2025-08-15',status:'todo'},
+   ],
+   files:[
+     {name:'施工契約書_2025-04-01.pdf',ext:'pdf',size:'2.4 MB',by:'王大偉',date:'2025/04/01'},
+     {name:'建築平面圖_5F_v2.dwg',    ext:'dwg',size:'8.1 MB',by:'張雅婷',date:'2025/04/15'},
+     {name:'預算明細表_2025Q2.xlsx',  ext:'xlsx',size:'1.2 MB',by:'王大偉',date:'2025/05/03'},
+   ]},
+  {id:2,name:'台北東六機房新建工程',    mgr:'u3',status:'規劃設計',plan:0,  real:0,  budget:0,      contract:0,      startDate:'',endDate:'2026-12-31',duration:0,
+   tasks:[
+     {name:'場地評估與環境調查',progress:100,due:'2025-06-30',status:'done'},
+     {name:'建築設計圖繪製',   progress:35, due:'2025-07-31',status:'doing'},
+   ],files:[]},
+  {id:3,name:'南港展覽館空調系統更新',  mgr:'u5',status:'驗收',    plan:100,real:98, budget:3200000,contract:3100000,startDate:'2024-10-01',endDate:'2025-06-30',duration:273,
+   tasks:[
+     {name:'舊設備拆除',  progress:100,due:'2024-11-30',status:'done'},
+     {name:'新主機安裝',  progress:100,due:'2025-02-28',status:'done'},
+     {name:'系統測試調校',progress:100,due:'2025-06-15',status:'done'},
+     {name:'驗收文件整理',progress:90, due:'2025-06-30',status:'doing'},
+   ],
+   files:[
+     {name:'竣工圖_空調系統.dwg',ext:'dwg',size:'12.3 MB',by:'李國豪',date:'2025/06/18'},
+     {name:'測試報告書.pdf',    ext:'pdf',size:'4.1 MB', by:'李國豪',date:'2025/06/20'},
+   ]},
+  {id:4,name:'信義區辦公大樓外牆修繕',  mgr:'u5',status:'工程發包',plan:0,  real:0,  budget:850000, contract:720000, startDate:'',endDate:'2025-11-30',duration:0,
+   tasks:[
+     {name:'外牆現況調查',progress:100,due:'2025-05-31',status:'done'},
+     {name:'廠商詢比價',  progress:60, due:'2025-07-15',status:'doing'},
+   ],files:[]},
+  {id:5,name:'內湖廠房屋頂防水工程',    mgr:'u6',status:'規劃設計',plan:0,  real:0,  budget:0,      contract:0,      startDate:'',endDate:'2026-03-31',duration:0,
+   tasks:[{name:'現場勘查',progress:30,due:'2025-07-10',status:'doing'}],files:[]},
+];
+let PENDING=[
+  {id:'a1',name:'宜蘭太平機房新建工程',    by:'王大偉',eng:'u3',date:'2025-06-23',budget:'$320萬',note:'配合廠商擴廠需求，新建機房一棟，預計明年第一季完工'},
+  {id:'a2',name:'松山廠房消防設備更新工程', by:'李國豪',eng:'u5',date:'2025-06-25',budget:'$48萬', note:'消防設備年限屆至，需全面更換，配合年度消防安檢'},
+];
+
+const SCLS={規劃設計:'b-plan',工程發包:'b-bid',施工:'b-work',驗收:'b-chk'};
+const TCOL={done:'#0F6E56',doing:'#185FA5',todo:'#A0AEC0'};
+const TLBL={done:'已完成',doing:'進行中',todo:'待辦'};
+const EXT_ICO={pdf:'ti-file-type-pdf',dwg:'ti-vector-triangle',dxf:'ti-vector-triangle',doc:'ti-file-type-doc',docx:'ti-file-type-doc',xls:'ti-file-spreadsheet',xlsx:'ti-file-spreadsheet',jpg:'ti-photo',jpeg:'ti-photo',png:'ti-photo'};
+const EXT_CLS={pdf:'ico-pdf',dwg:'ico-dwg',dxf:'ico-dwg',doc:'ico-doc',docx:'ico-doc',xls:'ico-xls',xlsx:'ico-xls',jpg:'ico-img',jpeg:'ico-img',png:'ico-img'};
+const fmt=n=>n?'$'+Number(n).toLocaleString():'—';
+const remain=p=>p.budget&&p.contract?p.budget-p.contract:null;
+const diff=p=>p.real-p.plan;
+const diffStr=d=>d===0?'—':(d>0?'+':'')+d+'%';
+const diffCls=d=>d>0?'diff-pos':d<0?'diff-neg':'diff-zero';
+const noWork=p=>['規劃設計','工程發包'].includes(p.status);
+const progCol=(r,pl)=>{const d=r-pl;return d<-10?'var(--red)':d<0?'var(--amber)':'var(--blue)'};
+const taskAvg=t=>t.length?Math.round(t.reduce((a,x)=>a+x.progress,0)/t.length):0;
+const isOver=t=>t.status!=='done'&&t.due&&new Date(t.due)<new Date();
+
+let filterStatus='全部',filterMgr='',activeTab={},activeProjId=null;
+
+function updateApproveBadge(){
+  const b=document.getElementById('approve-badge');
+  if(PENDING.length>0){b.style.display='inline';b.textContent=PENDING.length;}
+  else b.style.display='none';
+}
+
+function goPage(id,projId){
+  if(projId!==undefined)activeProjId=projId;
+  ['list','approve','detail'].forEach(p=>document.getElementById('page-'+p).classList.toggle('active',p===id));
+  ['list','approve'].forEach(k=>{const b=document.getElementById('nl-'+k);if(b)b.classList.toggle('active',k===id);});
+  const bc=document.getElementById('breadcrumb');
+  if(id==='detail'&&activeProjId){
+    const p=PROJECTS.find(x=>x.id===activeProjId);
+    bc.innerHTML=`<span class="bc-item" onclick="goPage('list')">工程專案</span><span class="bc-sep"><i class="ti ti-chevron-right" style="font-size:12px"></i></span><span class="bc-cur">${p?p.name:''}</span>`;
+    renderDetail(activeProjId);
+  } else {
+    const labels={list:'工程專案',approve:'審核申請'};
+    bc.innerHTML=`<span class="bc-cur">${labels[id]||id}</span>`;
+  }
+  if(id==='list'){renderStats();renderFilters();renderTable();}
+  if(id==='approve')renderApprove();
+  window.scrollTo(0,0);
+}
+
+function renderStats(){
+  document.getElementById('list-sub').textContent=new Date().toLocaleDateString('zh-TW',{year:'numeric',month:'long',day:'numeric'})+' · 主管視角（唯讀）';
+  const totB=PROJECTS.reduce((a,p)=>a+p.budget,0);
+  const totR=PROJECTS.reduce((a,p)=>a+(remain(p)||0),0);
+  document.getElementById('stats').innerHTML=`
+    <div class="stat-card"><div class="stat-val">${PROJECTS.length}</div><div class="stat-lbl">專案總數</div><div class="stat-sub">${PROJECTS.filter(p=>p.status==='施工').length} 個施工中</div></div>
+    <div class="stat-card"><div class="stat-val">${PENDING.length}</div><div class="stat-lbl">待審核申請</div><div class="stat-sub" style="color:${PENDING.length>0?'var(--amber)':'var(--text4)'}">需你審核</div></div>
+    <div class="stat-card"><div class="stat-val" style="font-size:20px">${totB?'$'+Math.round(totB/10000)+'萬':'—'}</div><div class="stat-lbl">預算總額</div></div>
+    <div class="stat-card"><div class="stat-val" style="font-size:20px;color:${totR<0?'var(--red)':'inherit'}">${totB?'$'+Math.round(totR/10000)+'萬':'—'}</div><div class="stat-lbl">剩餘預算</div></div>`;
+}
+
+function renderFilters(){
+  const sts=['全部','規劃設計','工程發包','施工','驗收'];
+  document.getElementById('filter-bar').innerHTML=
+    `<span class="filter-label">狀態</span>`+
+    sts.map(s=>`<button class="chip${filterStatus===s?' active':''}" onclick="setSts('${s}')">${s}</button>`).join('')+
+    `<div class="filter-sep"></div><span class="filter-label">負責人</span>`+
+    Object.entries(ENG).map(([id,e])=>`<button class="chip${filterMgr===id?' mgr-active':''}" onclick="setMgr('${id}')" style="display:flex;align-items:center;gap:4px"><div class="av ${e.cls}" style="width:16px;height:16px;font-size:7px">${e.name[0]}</div>${e.name.slice(0,3)}</button>`).join('');
+  const mb=document.getElementById('mgr-bar');
+  if(filterMgr&&ENG[filterMgr]){
+    const e=ENG[filterMgr];mb.classList.add('show');
+    const av=document.getElementById('mgr-bar-av');av.textContent=e.name[0];av.className='av '+e.cls;av.style.cssText='width:24px;height:24px;font-size:11px';
+    document.getElementById('mgr-bar-lbl').textContent=`篩選中：${e.name} 負責的專案（共 ${PROJECTS.filter(p=>p.mgr===filterMgr).length} 個）`;
+  } else mb.classList.remove('show');
+}
+function setSts(s){filterStatus=s;renderFilters();renderTable();}
+function setMgr(id){filterMgr=filterMgr===id?'':id;renderFilters();renderTable();}
+function clearMgr(){filterMgr='';renderFilters();renderTable();}
+function clickMgr(id,ev){ev.stopPropagation();setMgr(id);}
+
+function renderTable(){
+  let list=PROJECTS;
+  if(filterStatus!=='全部')list=list.filter(p=>p.status===filterStatus);
+  if(filterMgr)list=list.filter(p=>p.mgr===filterMgr);
+  const tbody=document.getElementById('proj-tbody');
+  if(!list.length){tbody.innerHTML=`<tr><td colspan="11" class="empty"><i class="ti ti-folder-off"></i>無符合條件的專案</td></tr>`;return;}
+  tbody.innerHTML=list.map(p=>{
+    const e=ENG[p.mgr],d=diff(p),rem=remain(p),nw=noWork(p);
+    return`<tr class="proj-row" onclick="goPage('detail',${p.id})">
+      <td style="color:var(--text4);font-size:12px;font-weight:600">${p.id}</td>
+      <td><div class="name-cell">
+        <i class="ti ti-chevron-right" style="font-size:12px;color:var(--text4);flex-shrink:0"></i>
+        <span class="name-text">${p.name}</span>
+        ${p.files&&p.files.length?`<span class="attach-pill"><i class="ti ti-paperclip" style="font-size:10px"></i>${p.files.length}</span>`:''}
+      </div></td>
+      <td><div class="mgr-chip${filterMgr===p.mgr?' hl':''}" onclick="clickMgr('${p.mgr}',event)">
+        <div class="av ${e?e.cls:''}" style="width:22px;height:22px;font-size:9px">${e?e.name[0]:''}</div>
+        <span style="font-size:12px;font-weight:500">${e?e.name.slice(0,3)+'君':''}</span>
+      </div></td>
+      <td><span class="badge ${SCLS[p.status]||'b-plan'}">${p.status}</span></td>
+      <td>${nw?`<span style="color:var(--text4);font-size:12px">—</span>`:`<div class="prog-cell"><div class="prog-track"><div class="prog-fill" style="width:${p.plan}%;background:var(--text4)"></div></div><span class="prog-num">${p.plan}%</span></div>`}</td>
+      <td>${nw?`<span style="color:var(--text4);font-size:12px">—</span>`:`<div class="prog-cell"><div class="prog-track"><div class="prog-fill" style="width:${p.real}%;background:${progCol(p.real,p.plan)}"></div></div><span class="prog-num">${p.real}%</span></div>`}</td>
+      <td class="r"><span class="${diffCls(d)}">${nw?'—':diffStr(d)}</span></td>
+      <td class="r" style="font-size:12px;font-weight:600">${p.budget?fmt(p.budget):'—'}</td>
+      <td class="r" style="font-size:12px;color:${rem!==null&&rem<0?'var(--red)':'inherit'}">${rem!==null?fmt(rem):'—'}</td>
+      <td style="font-size:12px">${p.endDate||'—'}</td>
+      <td><button class="btn sm" onclick="event.stopPropagation();goPage('detail',${p.id})"><i class="ti ti-eye"></i></button></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderApprove(){
+  const el=document.getElementById('approve-content');
+  if(!PENDING.length){el.innerHTML=`<div class="empty"><i class="ti ti-check-circle"></i>目前無待審核申請</div>`;return;}
+  el.innerHTML=`<div class="section-hd"><span class="section-title">待審核（${PENDING.length}）</span></div>`+
+  PENDING.map(a=>{
+    const e=ENG[a.eng];
+    return`<div class="approval-item">
+      <div class="av ${e?e.cls:''}" style="width:40px;height:40px;font-size:16px;flex-shrink:0">${e?e.name[0]:''}</div>
+      <div class="approval-info">
+        <div class="approval-name">${a.name}</div>
+        <div class="approval-meta">申請人：${a.by} · ${a.date} · 預估預算：${a.budget}</div>
+        <div class="approval-note">${a.note}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;align-items:flex-end">
+        <span class="badge b-pending"><i class="ti ti-clock" style="font-size:10px"></i> 待審核</span>
+        <button class="btn sm success" onclick="doApprove('${a.id}',true)"><i class="ti ti-check"></i> 核准</button>
+        <button class="btn sm danger"  onclick="doApprove('${a.id}',false)"><i class="ti ti-x"></i> 退回</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function doApprove(id,ok){
+  PENDING=PENDING.filter(a=>a.id!==id);
+  updateApproveBadge();
+  toast(ok?'✓ 已核准，專案建立中，工程師將收到通知':'已退回申請，工程師將收到通知');
+  renderApprove();
+  renderStats();
+}
+
+function renderDetail(id){
+  const p=PROJECTS.find(x=>x.id===id);if(!p)return;
+  const e=ENG[p.mgr],avg=taskAvg(p.tasks),rem=remain(p),d=diff(p);
+  const dur=p.duration||(p.startDate&&p.endDate?Math.round((new Date(p.endDate)-new Date(p.startDate))/864e5):null);
+  const nw=noWork(p);
+  const done=p.tasks.filter(t=>t.status==='done').length,doing=p.tasks.filter(t=>t.status==='doing').length;
+  const tab=activeTab[id]||'tasks';
+
+  document.getElementById('detail-hero-wrap').innerHTML=`
+    <div class="detail-hero">
+      <div class="detail-hero-top">
+        <div>
+          <div class="detail-name">${p.name}</div>
+          <div class="detail-meta">
+            <span class="badge ${SCLS[p.status]||'b-plan'}" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.2)">${p.status}</span>
+            ${e?`<div class="av ${e.cls}" style="width:20px;height:20px;font-size:9px">${e.name[0]}</div><span style="font-size:13px;color:rgba(255,255,255,.7)">${e.name} · ${e.role}</span>`:''}
+            <span style="font-size:11px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:2px 8px"><i class="ti ti-eye" style="font-size:10px"></i> 唯讀</span>
+          </div>
+        </div>
+        <button class="btn ghost" onclick="goPage('list')"><i class="ti ti-arrow-left"></i> 返回</button>
+      </div>
+      <div class="date-strip">
+        <div class="ds"><div class="ds-lbl"><i class="ti ti-calendar-event" style="font-size:11px"></i> 契約開工日</div><div class="ds-val">${p.startDate||'—'}</div></div>
+        <div class="ds"><div class="ds-lbl"><i class="ti ti-calendar-check" style="font-size:11px"></i> 預定完工日</div><div class="ds-val">${p.endDate||'—'}</div></div>
+        <div class="ds"><div class="ds-lbl"><i class="ti ti-clock" style="font-size:11px"></i> 工期</div><div class="ds-val">${dur?dur+' 天':'—'}</div></div>
+      </div>
+    </div>`;
+
+  document.getElementById('detail-metrics').innerHTML=`
+    <div class="metric"><div class="metric-lbl">工項進度</div><div class="metric-val">${avg}%</div></div>
+    <div class="metric"><div class="metric-lbl">完成 / 進行 / 待辦</div><div class="metric-val" style="font-size:18px">${done}<span style="color:var(--text4);font-size:14px"> / ${doing} / ${p.tasks.length-done-doing}</span></div></div>
+    <div class="metric"><div class="metric-lbl">預算金額</div><div class="metric-val" style="font-size:18px">${p.budget?fmt(p.budget):'—'}</div></div>
+    <div class="metric"><div class="metric-lbl">剩餘預算</div><div class="metric-val" style="font-size:18px;color:${rem!==null&&rem<0?'var(--red)':'inherit'}">${rem!==null?fmt(rem):'—'}</div></div>`;
+
+  document.getElementById('detail-prog-bar').innerHTML=!nw?`
+    <div class="big-bar-wrap">
+      <div class="big-bar-lbl"><span>實際進度 ${p.real}%</span><span>預計進度 ${p.plan}%</span></div>
+      <div class="big-bar"><div class="big-fill" style="width:${p.real}%;background:${progCol(p.real,p.plan)}"></div></div>
+    </div>`:'';
+
+  const tabs=[{k:'tasks',l:'工項任務',i:'ti-checklist'},{k:'files',l:`契約文件 (${p.files.length})`,i:'ti-files'},{k:'budget',l:'預算資訊',i:'ti-report-money'},{k:'engineer',l:'負責工程師',i:'ti-user'}];
+  document.getElementById('detail-tabs').innerHTML=tabs.map(t=>`<button class="tab${tab===t.k?' active':''}" onclick="switchTab(${id},'${t.k}')"><i class="ti ${t.i}"></i>${t.l}</button>`).join('');
+
+  let html='';
+  if(tab==='tasks'){
+    html=`<div class="section-card"><div class="section-hd"><span class="section-title">工項清單（${p.tasks.length} 項）</span><span class="readonly-note"><i class="ti ti-lock"></i> 主管唯讀</span></div>
+      ${p.tasks.map(t=>`<div class="task-item">
+        <div class="task-dot" style="background:${TCOL[t.status]}"></div>
+        <div class="task-name">${t.name}</div>
+        <div class="task-mini-bar"><div class="task-mini-fill" style="width:${t.progress}%"></div></div>
+        <span class="task-pct">${t.progress}%</span>
+        <span class="badge ${t.status==='done'?'b-chk':t.status==='doing'?'b-work':'b-plan'}" style="font-size:10px">${TLBL[t.status]}</span>
+        <span class="task-due" style="color:${isOver(t)?'var(--red)':'var(--text4)'}"><i class="ti ti-calendar-due" style="font-size:11px"></i> ${t.due.slice(5)}</span>
+      </div>`).join('')||`<div class="empty"><i class="ti ti-checklist"></i>尚無工項資料</div>`}
+    </div>`;
+  } else if(tab==='files'){
+    html=`<div class="section-card"><div class="section-hd"><span class="section-title">契約文件與圖說</span><span class="readonly-note"><i class="ti ti-lock"></i> 主管唯讀</span></div>
+      ${p.files.map(f=>`<div class="file-item">
+        <div class="file-ico ${EXT_CLS[f.ext]||'ico-other'}"><i class="ti ${EXT_ICO[f.ext]||'ti-file'}"></i></div>
+        <div class="file-info"><div class="file-name">${f.name}</div><div class="file-meta">${f.ext.toUpperCase()} · ${f.size} · 上傳者：${f.by} · ${f.date}</div></div>
+        <a class="btn sm" href="#" onclick="toast('下載：'+event.target.closest('.file-item').querySelector('.file-name').textContent);return false"><i class="ti ti-download"></i> 下載</a>
+      </div>`).join('')||`<div class="empty"><i class="ti ti-file-off"></i>尚無文件</div>`}
+    </div>`;
+  } else if(tab==='budget'){
+    html=remain(p)!==null?`<div class="section-card"><div class="section-hd"><span class="section-title">預算資訊</span><span class="readonly-note"><i class="ti ti-lock"></i> 主管唯讀</span></div>
+      <div class="budget-grid">
+        <div class="budget-item"><div class="budget-lbl">預算金額</div><div class="budget-val">${fmt(p.budget)}</div></div>
+        <div class="budget-item"><div class="budget-lbl">契約金額</div><div class="budget-val">${fmt(p.contract)}</div></div>
+        <div class="budget-item"><div class="budget-lbl">剩餘預算</div><div class="budget-val" style="color:${remain(p)<0?'var(--red)':'var(--green)'}">${fmt(remain(p))}</div></div>
+      </div>
+      <div style="margin-top:16px">
+        <div class="big-bar-lbl"><span>契約 / 預算比</span><span>${Math.round(p.contract/p.budget*100)}%</span></div>
+        <div class="big-bar"><div class="big-fill" style="width:${Math.round(p.contract/p.budget*100)}%;background:var(--blue)"></div></div>
+      </div></div>`:`<div class="section-card"><div class="empty"><i class="ti ti-report-money"></i>尚未填入預算資料</div></div>`;
+  } else if(tab==='engineer'){
+    const others=PROJECTS.filter(x=>x.mgr===p.mgr&&x.id!==p.id);
+    html=`<div class="section-card"><div class="section-hd"><span class="section-title">負責工程師</span></div>
+      <div class="eng-hero">
+        <div class="av ${e?e.cls:''}" style="width:44px;height:44px;font-size:18px">${e?e.name[0]:''}</div>
+        <div style="flex:1"><div style="font-size:16px;font-weight:700;margin-bottom:3px">${e?e.name:'—'}</div><div style="font-size:13px;color:var(--text3)">${e?e.role:''}</div></div>
+        <button class="btn sm" onclick="setMgr('${p.mgr}');goPage('list')"><i class="ti ti-filter"></i> 查看所有專案</button>
+      </div>
+      ${others.length?`<div style="margin-top:14px"><div class="section-hd" style="margin-bottom:8px"><span class="section-title">其他負責專案（${others.length}）</span></div>
+        ${others.map(x=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-l);cursor:pointer" onclick="goPage('detail',${x.id})">
+          <span style="font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px"><i class="ti ti-chevron-right" style="font-size:12px;color:var(--text4)"></i>${x.name}</span>
+          <span class="badge ${SCLS[x.status]||'b-plan'}">${x.status}</span>
+        </div>`).join('')}</div>`:''}
+    </div>`;
+  }
+  document.getElementById('detail-content').innerHTML=html;
+}
+function switchTab(id,tab){activeTab[id]=tab;renderDetail(id);}
+
+let _tt;
+function toast(msg){
+  let el=document.getElementById('_toast');
+  if(!el){el=document.createElement('div');el.id='_toast';Object.assign(el.style,{position:'fixed',bottom:'24px',left:'50%',transform:'translateX(-50%)',background:'#1B2A3B',color:'#fff',padding:'10px 20px',borderRadius:'24px',fontSize:'13px',fontWeight:'500',zIndex:'9999',opacity:'0',transition:'opacity .2s',pointerEvents:'none',whiteSpace:'nowrap',boxShadow:'0 4px 16px rgba(0,0,0,.25)'});document.body.appendChild(el);}
+  el.textContent=msg;el.style.opacity='1';clearTimeout(_tt);_tt=setTimeout(()=>el.style.opacity='0',2500);
+}
+updateApproveBadge();goPage('list');
+</script>
+</body>
+</html>

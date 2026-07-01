@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工程管理系統 — 施工填報</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1B2A3B;--blue:#185FA5;--blue-l:#E6F1FB;--blue-m:#B5D4F4;
+  --green:#0F6E56;--green-l:#E1F5EE;--amber:#854F0B;--amber-l:#FAEEDA;
+  --red:#A32D2D;--red-l:#FCEBEB;
+  --bg:#F2F4F7;--surface:#fff;--border:#DDE1E9;--border-l:#EEF0F5;
+  --text:#18232F;--text2:#4A5568;--text3:#718096;--text4:#A0AEC0;
+  --r:10px;--r-sm:6px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
+.topnav{background:var(--navy);padding:0 20px;height:52px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.logo{display:flex;align-items:center;gap:8px;color:#fff;font-size:14px;font-weight:600}
+.logo-icon{width:28px;height:28px;background:var(--blue);border-radius:6px;display:flex;align-items:center;justify-content:center}
+.topnav-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.role-badge{font-size:11px;background:rgba(133,79,11,.3);color:#FAC775;border:1px solid rgba(133,79,11,.4);border-radius:20px;padding:3px 10px;font-weight:500}
+.restrict-bar{background:var(--amber-l);border-bottom:1px solid #FAC775;padding:8px 20px;font-size:12px;color:var(--amber);display:flex;align-items:center;gap:8px}
+.wrap{max-width:720px;margin:0 auto;padding:20px}
+.proj-header{background:var(--navy);border-radius:var(--r);padding:20px 24px;margin-bottom:16px;color:#fff}
+.proj-name{font-size:18px;font-weight:700;letter-spacing:-.01em;margin-bottom:6px}
+.proj-meta{font-size:13px;color:rgba(255,255,255,.6);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.section-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px}
+.section-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.section-title{font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em}
+.badge{display:inline-flex;align-items:center;gap:3px;font-size:11px;padding:3px 9px;border-radius:20px;font-weight:600}
+.b-work{background:var(--blue-l);color:var(--blue)}
+.b-chk{background:var(--green-l);color:var(--green)}
+.b-plan{background:#EEEDFE;color:#3C3489}
+.task-item{padding:12px 0;border-bottom:1px solid var(--border-l)}
+.task-item:last-child{border-bottom:none}
+.task-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.task-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.task-name{flex:1;font-size:14px;font-weight:600;color:var(--text)}
+.task-due{font-size:11px;color:var(--text4);white-space:nowrap}
+.progress-input{margin-top:8px}
+.progress-lbl{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+.progress-bar-wrap{position:relative;height:8px;background:var(--border-l);border-radius:8px;overflow:hidden;border:1px solid var(--border)}
+.progress-bar-fill{height:100%;border-radius:8px;background:var(--blue);transition:width .2s}
+input[type=range]{width:100%;margin-top:8px;accent-color:var(--blue);cursor:pointer}
+.field{margin-bottom:14px}
+.field:last-child{margin-bottom:0}
+.field label{font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px}
+.field input,.field select,.field textarea{width:100%;padding:9px 12px;border-radius:var(--r-sm);border:1px solid var(--border);font-size:13px;font-family:inherit;color:var(--text);transition:border-color .15s;background:var(--surface)}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(24,95,165,.1)}
+.field textarea{resize:vertical;min-height:80px;line-height:1.6}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.drop-zone{border:2px dashed var(--border);border-radius:var(--r);padding:1.5rem;text-align:center;background:var(--bg);cursor:pointer;transition:all .2s}
+.drop-zone:hover{border-color:var(--blue);background:var(--blue-l)}
+.photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.photo-thumb{aspect-ratio:1;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-size:24px;color:var(--text4);cursor:pointer;position:relative;overflow:hidden}
+.photo-thumb img{width:100%;height:100%;object-fit:cover}
+.photo-del{position:absolute;top:4px;right:4px;width:20px;height:20px;background:rgba(0,0,0,.6);border-radius:50%;display:none;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:10px}
+.photo-thumb:hover .photo-del{display:flex}
+.submit-btn{width:100%;padding:13px;background:var(--blue);color:#fff;border:none;border-radius:var(--r-sm);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:background .15s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:4px}
+.submit-btn:hover{background:#0C447C}
+.info-box{background:var(--amber-l);border:1px solid #FAC775;border-radius:var(--r-sm);padding:10px 14px;font-size:12px;color:var(--amber);display:flex;align-items:flex-start;gap:8px;margin-bottom:12px}
+.history-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border-l)}
+.history-item:last-child{border-bottom:none}
+.history-date{font-size:11px;color:var(--text4);white-space:nowrap;width:80px;flex-shrink:0;padding-top:2px}
+.history-body{flex:1}
+.history-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px}
+.history-meta{font-size:11px;color:var(--text4)}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px}
+.empty{text-align:center;padding:2rem;color:var(--text4)}
+.empty i{font-size:24px;display:block;margin-bottom:8px}
+@media(max-width:480px){.field-row{grid-template-columns:1fr}.photo-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <div class="logo">
+    <div class="logo-icon"><i class="ti ti-building-factory-2" style="color:#fff;font-size:15px"></i></div>
+    工程管理系統
+  </div>
+  <div class="topnav-right">
+    <span class="role-badge"><i class="ti ti-truck" style="font-size:11px"></i> 分包商</span>
+    <span style="font-size:12px;color:rgba(255,255,255,.6)">宏鑫泥作</span>
+  </div>
+</nav>
+
+<div class="restrict-bar">
+  <i class="ti ti-lock" style="font-size:14px"></i>
+  <span>你目前只能看到被指派的工項，專案整體預算與其他分包商資料不對你開放。</span>
+</div>
+
+<div class="wrap">
+  <div class="proj-header">
+    <div class="proj-name">台北劍潭大樓5樓辦公室改裝</div>
+    <div class="proj-meta">
+      <span><i class="ti ti-hard-hat" style="font-size:12px"></i> 負責工程師：王大偉</span>
+      <span><i class="ti ti-calendar-check" style="font-size:12px"></i> 完工日：2025-09-30</span>
+      <span><i class="ti ti-link" style="font-size:12px"></i> 填報連結有效</span>
+    </div>
+  </div>
+
+  <!-- 指派工項 -->
+  <div class="section-card">
+    <div class="section-hd">
+      <span class="section-title">指派工項（共 2 項）</span>
+      <span class="badge b-work"><i class="ti ti-clock" style="font-size:10px"></i> 進行中</span>
+    </div>
+    <div class="info-box">
+      <i class="ti ti-info-circle" style="font-size:14px;flex-shrink:0"></i>
+      <span>請拖拉進度條更新各工項完成度，並於下方填寫今日施工日誌。</span>
+    </div>
+    <div id="tasks-area"></div>
+  </div>
+
+  <!-- 施工日誌 -->
+  <div class="section-card">
+    <div class="section-hd"><span class="section-title">今日施工日誌</span></div>
+    <div class="field-row" style="margin-bottom:14px">
+      <div class="field" style="margin-bottom:0">
+        <label>施工日期</label>
+        <input type="date" id="log-date">
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label>天氣狀況</label>
+        <select id="log-weather">
+          <option value="☀️ 晴天">☀️ 晴天</option>
+          <option value="⛅ 多雲">⛅ 多雲</option>
+          <option value="🌧️ 雨天">🌧️ 雨天</option>
+          <option value="⛈️ 雷雨">⛈️ 雷雨</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-row" style="margin-bottom:14px">
+      <div class="field" style="margin-bottom:0">
+        <label>今日出工人數</label>
+        <input type="number" id="log-workers" placeholder="0" min="0" value="18">
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label>施工狀況</label>
+        <select id="log-status">
+          <option>正常施工</option>
+          <option>部分施工</option>
+          <option>暫停施工（天氣）</option>
+          <option>暫停施工（其他）</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>施工說明與備註</label>
+      <textarea id="log-note" placeholder="填寫今日施工內容、遇到的問題或特殊狀況..."></textarea>
+    </div>
+  </div>
+
+  <!-- 現場照片 -->
+  <div class="section-card">
+    <div class="section-hd"><span class="section-title">現場照片上傳</span></div>
+    <div class="drop-zone" onclick="document.getElementById('photo-input').click()" ondragover="event.preventDefault()" ondrop="handlePhotoDrop(event)">
+      <i class="ti ti-camera" style="font-size:28px;color:var(--text4);display:block;margin-bottom:10px"></i>
+      <div style="font-size:14px;font-weight:600;color:var(--text2);margin-bottom:5px">拖曳或點擊上傳現場照片</div>
+      <div style="font-size:12px;color:var(--text4)">支援 JPG / PNG，可一次上傳多張</div>
+    </div>
+    <input type="file" id="photo-input" accept="image/*" multiple style="display:none" onchange="handlePhotoSelect(event)">
+    <div class="photo-grid" id="photo-grid"></div>
+  </div>
+
+  <!-- 填報歷史 -->
+  <div class="section-card">
+    <div class="section-hd">
+      <span class="section-title">我的填報記錄</span>
+      <span style="font-size:12px;color:var(--text4)">近 5 筆</span>
+    </div>
+    <div id="history-area"></div>
+  </div>
+
+  <button class="submit-btn" onclick="submitLog()">
+    <i class="ti ti-send"></i> 送出今日填報
+  </button>
+  <div style="text-align:center;font-size:12px;color:var(--text4);margin-top:10px;padding-bottom:20px">
+    送出後將通知工程師 王大偉 審核
+  </div>
+</div>
+
+<script>
+const TASKS=[
+  {id:'t1',name:'水電管線配置',progress:80, due:'2025-07-05',status:'doing'},
+  {id:'t2',name:'新隔間牆施作',progress:30, due:'2025-07-20',status:'doing'},
+];
+const HISTORY=[
+  {date:'2025-06-24',workers:18,weather:'☀️ 晴天',status:'正常施工',note:'防水底層施作進度正常，預計明日完成底層',approved:false},
+  {date:'2025-06-23',workers:15,weather:'⛅ 多雲',status:'正常施工',note:'水電配管施作，完成主線路',approved:true},
+  {date:'2025-06-21',workers:20,weather:'☀️ 晴天',status:'正常施工',note:'隔間拆除完畢，清運廢棄物',approved:true},
+  {date:'2025-06-20',workers:8, weather:'🌧️ 雨天',status:'部分施工',note:'上午雨勢大暫停，下午恢復施工',approved:true},
+  {date:'2025-06-19',workers:18,weather:'☀️ 晴天',status:'正常施工',note:'開始拆除工作，進度順利',approved:true},
+];
+let taskProgress={};TASKS.forEach(t=>taskProgress[t.id]=t.progress);
+let photos=[];
+
+document.getElementById('log-date').value=new Date().toISOString().split('T')[0];
+
+function renderTasks(){
+  document.getElementById('tasks-area').innerHTML=TASKS.map(t=>`
+    <div class="task-item">
+      <div class="task-top">
+        <div class="task-dot" style="background:#185FA5"></div>
+        <div class="task-name">${t.name}</div>
+        <span class="badge b-work" style="font-size:10px">進行中</span>
+        <span class="task-due"><i class="ti ti-calendar-due" style="font-size:11px"></i> ${t.due.slice(5)}</span>
+      </div>
+      <div class="progress-input">
+        <div class="progress-lbl">
+          <span>完成度</span>
+          <span id="pct-${t.id}" style="font-weight:700;color:var(--blue)">${taskProgress[t.id]}%</span>
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" id="bar-${t.id}" style="width:${taskProgress[t.id]}%"></div>
+        </div>
+        <input type="range" min="0" max="100" value="${taskProgress[t.id]}"
+          oninput="updateProgress('${t.id}',this.value)" style="margin-top:6px">
+      </div>
+    </div>`).join('');
+}
+
+function updateProgress(id,val){
+  taskProgress[id]=Number(val);
+  document.getElementById('pct-'+id).textContent=val+'%';
+  document.getElementById('bar-'+id).style.width=val+'%';
+}
+
+function renderHistory(){
+  document.getElementById('history-area').innerHTML=HISTORY.map(h=>`
+    <div class="history-item">
+      <div class="history-date">${h.date.slice(5)}<br><span style="color:${h.approved?'var(--green)':'var(--amber)'}">${h.approved?'✓ 已核准':'⏳ 待審核'}</span></div>
+      <div class="history-body">
+        <div class="history-title">${h.weather} · 出工 ${h.workers} 人 · ${h.status}</div>
+        <div class="history-meta">${h.note}</div>
+      </div>
+    </div>`).join('');
+}
+
+function handlePhotoSelect(ev){
+  Array.from(ev.target.files).forEach(addPhoto);
+  ev.target.value='';
+}
+function handlePhotoDrop(ev){
+  ev.preventDefault();
+  Array.from(ev.dataTransfer.files).filter(f=>f.type.startsWith('image/')).forEach(addPhoto);
+}
+function addPhoto(file){
+  const url=URL.createObjectURL(file);
+  const id='ph'+Date.now()+Math.random();
+  photos.push({id,url,name:file.name});
+  renderPhotos();
+}
+function removePhoto(id){photos=photos.filter(p=>p.id!==id);renderPhotos();}
+function renderPhotos(){
+  document.getElementById('photo-grid').innerHTML=photos.map(p=>`
+    <div class="photo-thumb">
+      <img src="${p.url}" alt="${p.name}">
+      <div class="photo-del" onclick="removePhoto('${p.id}')"><i class="ti ti-x" style="font-size:10px"></i></div>
+    </div>`).join('');
+}
+
+function submitLog(){
+  const note=document.getElementById('log-note').value.trim();
+  if(!note){toast('請填寫施工說明');return;}
+  toast('✓ 填報已送出，等待工程師 王大偉 審核');
+  document.getElementById('log-note').value='';
+  photos=[];renderPhotos();
+  HISTORY.unshift({date:document.getElementById('log-date').value,workers:Number(document.getElementById('log-workers').value)||0,weather:document.getElementById('log-weather').value,status:document.getElementById('log-status').value,note,approved:false});
+  if(HISTORY.length>5)HISTORY.pop();
+  renderHistory();
+}
+
+let _tt;
+function toast(msg){
+  let el=document.getElementById('_toast');
+  if(!el){el=document.createElement('div');el.id='_toast';Object.assign(el.style,{position:'fixed',bottom:'24px',left:'50%',transform:'translateX(-50%)',background:'#1B2A3B',color:'#fff',padding:'10px 20px',borderRadius:'24px',fontSize:'13px',fontWeight:'500',zIndex:'9999',opacity:'0',transition:'opacity .2s',pointerEvents:'none',whiteSpace:'nowrap',boxShadow:'0 4px 16px rgba(0,0,0,.25)'});document.body.appendChild(el);}
+  el.textContent=msg;el.style.opacity='1';clearTimeout(_tt);_tt=setTimeout(()=>el.style.opacity='0',2500);
+}
+
+renderTasks();renderHistory();
+</script>
+</body>
+</html>

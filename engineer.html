@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工程管理系統 — 工程師介面</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1B2A3B;--navy-2:#253547;--navy-3:#2E4159;
+  --blue:#185FA5;--blue-l:#E6F1FB;--blue-m:#B5D4F4;
+  --green:#0F6E56;--green-l:#E1F5EE;
+  --amber:#854F0B;--amber-l:#FAEEDA;
+  --red:#A32D2D;--red-l:#FCEBEB;
+  --purple:#3C3489;--purple-l:#EEEDFE;
+  --teal:#085041;--teal-l:#D1FAE5;
+  --bg:#F2F4F7;--surface:#FFFFFF;
+  --border:#DDE1E9;--border-l:#EEF0F5;
+  --text:#18232F;--text2:#4A5568;--text3:#718096;--text4:#A0AEC0;
+  --r:10px;--r-sm:6px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
+
+/* ── 頂部導覽 ── */
+.topnav{background:var(--navy);padding:0 20px;height:52px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.logo{display:flex;align-items:center;gap:8px;color:#fff;font-size:14px;font-weight:600;letter-spacing:.01em}
+.logo-icon{width:28px;height:28px;background:var(--blue);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px}
+.breadcrumb{display:flex;align-items:center;gap:6px;margin-left:12px;padding-left:12px;border-left:1px solid rgba(255,255,255,.15)}
+.bc-item{font-size:13px;color:rgba(255,255,255,.5);cursor:pointer;transition:color .15s}
+.bc-item:hover{color:rgba(255,255,255,.85)}
+.bc-sep{color:rgba(255,255,255,.25);font-size:12px}
+.bc-cur{font-size:13px;color:#fff;font-weight:500}
+.topnav-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.role-badge{font-size:11px;background:rgba(15,110,86,.25);color:#9FE1CB;border:1px solid rgba(15,110,86,.3);border-radius:20px;padding:3px 10px;font-weight:500}
+.nav-link{font-size:12px;color:rgba(255,255,255,.6);padding:5px 10px;border-radius:var(--r-sm);cursor:pointer;display:inline-flex;align-items:center;gap:5px;border:1px solid transparent;transition:all .15s;background:transparent;font-family:inherit;white-space:nowrap}
+.nav-link:hover{background:rgba(255,255,255,.1);color:#fff}
+.nav-link.active{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.15)}
+.user-pill{display:flex;align-items:center;gap:6px;font-size:12px;color:rgba(255,255,255,.65);cursor:pointer;padding:5px 10px;border:1px solid rgba(255,255,255,.15);border-radius:var(--r-sm);background:transparent;font-family:inherit;transition:all .15s}
+.user-pill:hover{background:rgba(255,255,255,.1);color:#fff}
+
+/* ── 通用按鈕 ── */
+.btn{border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);padding:7px 13px;font-size:12px;cursor:pointer;color:var(--text2);display:inline-flex;align-items:center;gap:5px;transition:all .15s;font-family:inherit;white-space:nowrap;font-weight:500}
+.btn:hover{background:var(--bg);border-color:var(--text4)}
+.btn.pri{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn.pri:hover{background:#0C447C}
+.btn.teal{background:var(--teal);color:#D1FAE5;border-color:var(--teal)}
+.btn.teal:hover{background:#063730}
+.btn.ghost{background:transparent;border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.7)}
+.btn.ghost:hover{background:rgba(255,255,255,.1);color:#fff}
+.btn.sm{padding:4px 9px;font-size:11px}
+.btn.danger{color:var(--red);border-color:#F7C1C1}
+.btn.danger:hover{background:var(--red-l)}
+.btn.readonly{color:var(--text4);border-color:var(--border-l);background:var(--bg);cursor:default}
+.btn.readonly:hover{background:var(--bg);border-color:var(--border-l);color:var(--text4)}
+
+/* ── 版面 ── */
+.page{display:none;max-width:1100px;margin:0 auto;padding:20px}
+.page.active{display:block}
+.page-hd{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap}
+.page-title{font-size:20px;font-weight:700;color:var(--text);letter-spacing:-.01em}
+.page-sub{font-size:13px;color:var(--text3);margin-top:4px}
+
+/* ── 徽章 ── */
+.badge{display:inline-flex;align-items:center;gap:3px;font-size:11px;padding:3px 9px;border-radius:20px;font-weight:600;white-space:nowrap}
+.b-plan{background:var(--purple-l);color:var(--purple)}
+.b-bid{background:var(--amber-l);color:var(--amber)}
+.b-work{background:var(--blue-l);color:var(--blue)}
+.b-chk{background:var(--green-l);color:var(--green)}
+.b-pending{background:var(--amber-l);color:var(--amber)}
+.b-mine{background:var(--teal-l);color:var(--teal)}
+.b-readonly{background:var(--bg);color:var(--text4);border:1px solid var(--border)}
+
+/* ── 頭像 ── */
+.av{border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:600;flex-shrink:0}
+.av-a{background:#C8DEFA;color:#0C447C}
+.av-b{background:#A8EDD8;color:#085041}
+.av-c{background:#F5C6D0;color:#72243E}
+.av-d{background:#FAD7A0;color:#633806}
+.av-e{background:#D5D2F9;color:#3C3489}
+
+/* ── 統計卡 ── */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px}
+.stat-val{font-size:26px;font-weight:700;color:var(--text);line-height:1;margin-bottom:4px}
+.stat-lbl{font-size:12px;color:var(--text3);font-weight:500}
+.stat-sub{font-size:11px;color:var(--text4);margin-top:4px}
+
+/* ── 篩選列 ── */
+.filter-bar{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+.filter-label{font-size:11px;color:var(--text4);font-weight:500;padding:0 2px}
+.filter-sep{width:1px;height:18px;background:var(--border);margin:0 4px}
+.chip{font-size:12px;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--text3);cursor:pointer;font-weight:500;transition:all .15s;display:inline-flex;align-items:center;gap:4px;font-family:inherit}
+.chip:hover{border-color:var(--text4);color:var(--text)}
+.chip.active{background:var(--teal-l);color:var(--teal);border-color:var(--teal)}
+.chip.mgr-active{background:var(--purple-l);color:var(--purple);border-color:var(--purple)}
+.mgr-filter-bar{display:none;align-items:center;gap:8px;background:var(--purple-l);border:1px solid #C5C2F0;border-radius:var(--r-sm);padding:8px 12px;margin-bottom:10px;font-size:13px;color:var(--purple)}
+.mgr-filter-bar.show{display:flex}
+
+/* ── 表格 ── */
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead{background:var(--bg)}
+th{padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:var(--text3);border-bottom:1px solid var(--border);white-space:nowrap;letter-spacing:.03em;text-transform:uppercase}
+th.r,td.r{text-align:right}
+td{padding:11px 14px;border-bottom:1px solid var(--border-l);color:var(--text);vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tr.proj-row{cursor:pointer;transition:background .12s}
+tr.proj-row:hover{background:#F8FAFE}
+tr.proj-row:hover .name-text{color:var(--blue)}
+tr.row-mine td:first-child{border-left:3px solid var(--teal)}
+tr.row-other td:first-child{border-left:3px solid transparent}
+.name-cell{display:flex;align-items:center;gap:7px;white-space:normal;word-break:break-all}
+.name-text{font-weight:600;color:var(--text);transition:color .15s}
+.attach-pill{font-size:10px;background:var(--bg);border:1px solid var(--border);border-radius:20px;padding:1px 6px;color:var(--text4);flex-shrink:0;white-space:nowrap}
+.mine-tag{font-size:10px;padding:2px 7px;border-radius:20px;background:var(--teal-l);color:var(--teal);border:1px solid #86EFAC;flex-shrink:0;font-weight:500}
+.readonly-tag{font-size:10px;padding:2px 7px;border-radius:20px;background:var(--bg);color:var(--text4);border:1px solid var(--border-l);flex-shrink:0;font-weight:500}
+.mgr-chip{display:inline-flex;align-items:center;gap:4px;cursor:pointer;border-radius:20px;padding:3px 8px 3px 3px;border:1px solid transparent;transition:all .15s}
+.mgr-chip:hover{background:var(--purple-l);border-color:#C5C2F0}
+.mgr-chip.hl{background:var(--purple-l);border-color:#C5C2F0}
+.prog-cell{display:flex;align-items:center;gap:6px}
+.prog-track{flex:1;height:5px;background:var(--border-l);border-radius:5px;overflow:hidden;min-width:40px}
+.prog-fill{height:100%;border-radius:5px}
+.prog-num{font-size:11px;color:var(--text3);width:26px;text-align:right;flex-shrink:0}
+.diff-pos{color:var(--green);font-weight:600}
+.diff-neg{color:var(--red);font-weight:600}
+.diff-zero{color:var(--text4)}
+
+/* ── 詳情頁 Hero ── */
+.detail-hero{background:var(--navy);border-radius:var(--r);padding:20px 24px;margin-bottom:16px;color:#fff}
+.detail-hero-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.detail-name{font-size:20px;font-weight:700;color:#fff;margin-bottom:6px;letter-spacing:-.01em}
+.detail-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.date-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.ds{background:rgba(255,255,255,.08);border-radius:var(--r-sm);padding:12px 14px;border:1px solid rgba(255,255,255,.08)}
+.ds-lbl{font-size:10px;color:rgba(255,255,255,.5);margin-bottom:6px;display:flex;align-items:center;gap:4px;font-weight:500;letter-spacing:.04em;text-transform:uppercase}
+.ds-val{font-size:15px;font-weight:600;color:#fff}
+.readonly-hero-banner{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:var(--r-sm);padding:10px 14px;display:flex;align-items:center;gap:8px;font-size:13px;color:rgba(255,255,255,.75);margin-top:14px}
+
+/* ── 指標列 ── */
+.metrics-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:13px 16px}
+.metric-lbl{font-size:11px;color:var(--text3);font-weight:500;margin-bottom:5px;letter-spacing:.03em;text-transform:uppercase}
+.metric-val{font-size:20px;font-weight:700;color:var(--text);line-height:1}
+.big-bar-wrap{margin-bottom:16px}
+.big-bar-lbl{display:flex;justify-content:space-between;font-size:12px;color:var(--text3);margin-bottom:5px}
+.big-bar{height:8px;background:var(--border-l);border-radius:8px;overflow:hidden;border:1px solid var(--border)}
+.big-fill{height:100%;border-radius:8px;transition:width .5s}
+
+/* ── 頁籤 ── */
+.tab-bar{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:16px}
+.tab{font-size:13px;padding:8px 16px;border:none;background:transparent;color:var(--text3);cursor:pointer;font-weight:500;font-family:inherit;border-bottom:2px solid transparent;margin-bottom:-1px;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+
+/* ── 區塊卡片 ── */
+.section-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px}
+.section-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.section-title{font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em}
+
+/* ── 工項 ── */
+.task-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-l)}
+.task-item:last-child{border-bottom:none}
+.task-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.task-name{flex:1;font-size:13px;font-weight:500;color:var(--text)}
+.task-mini-bar{flex:0 0 56px;height:4px;background:var(--border-l);border-radius:4px;overflow:hidden}
+.task-mini-fill{height:100%;border-radius:4px;background:var(--blue)}
+.task-pct{font-size:11px;color:var(--text3);width:30px;text-align:right}
+.task-eng{font-size:11px;color:var(--text4);white-space:nowrap}
+.task-due{font-size:11px;white-space:nowrap}
+
+/* ── 文件 ── */
+.file-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-l)}
+.file-item:last-child{border-bottom:none}
+.file-ico{width:38px;height:38px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.ico-pdf{background:#FCEBEB;color:#791F1F}
+.ico-dwg{background:var(--purple-l);color:var(--purple)}
+.ico-doc{background:var(--blue-l);color:var(--blue)}
+.ico-xls{background:var(--green-l);color:var(--green)}
+.ico-img{background:var(--amber-l);color:var(--amber)}
+.ico-other{background:var(--bg);color:var(--text4)}
+.file-info{flex:1;min-width:0}
+.file-name{font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:2px}
+.file-meta{font-size:11px;color:var(--text4)}
+.drop-zone{border:2px dashed var(--border);border-radius:var(--r);padding:2rem;text-align:center;background:var(--bg);cursor:pointer;transition:all .2s;margin-top:12px}
+.drop-zone:hover,.drop-zone.drag{border-color:var(--blue);background:var(--blue-l)}
+
+/* ── 預算 ── */
+.budget-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.budget-item{background:var(--bg);border-radius:var(--r-sm);padding:14px;text-align:center;border:1px solid var(--border-l)}
+.budget-lbl{font-size:11px;color:var(--text3);font-weight:500;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+.budget-val{font-size:18px;font-weight:700;color:var(--text)}
+
+/* ── 工程師區 ── */
+.eng-hero{display:flex;align-items:center;gap:14px;background:var(--bg);border-radius:var(--r-sm);padding:14px;border:1px solid var(--border-l)}
+.other-proj-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-l);cursor:pointer;transition:background .12s}
+.other-proj-row:last-child{border-bottom:none}
+.other-proj-row:hover{background:var(--bg)}
+.other-proj-name{font-size:13px;font-weight:500;color:var(--text);display:flex;align-items:center;gap:6px}
+
+/* ── 分包商指派 ── */
+.sub-chip{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--border-l);border-radius:var(--r-sm);padding:10px 14px;margin-bottom:8px}
+.sub-chip:last-child{margin-bottom:0}
+
+/* ── 審核日誌 ── */
+.review-item{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--border-l)}
+.review-item:last-child{border-bottom:none}
+
+/* ── 上傳進度 ── */
+.upload-prog{background:var(--bg);border-radius:var(--r-sm);padding:10px 14px;margin-bottom:10px;border:1px solid var(--border-l)}
+.up-track{height:4px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:6px}
+.up-fill{height:100%;border-radius:4px;background:var(--blue);transition:width .2s}
+
+/* ── Alert Banner ── */
+.alert{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:var(--r-sm);margin-bottom:16px;font-size:13px;line-height:1.5}
+.alert-warn{background:var(--amber-l);border:1px solid #FAC775;color:var(--amber)}
+.alert-info{background:var(--blue-l);border:1px solid var(--blue-m);color:var(--blue)}
+.alert-ok{background:var(--green-l);border:1px solid #86EFAC;color:var(--green)}
+
+/* ── Modal ── */
+.modal-bg{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px}
+.modal{background:var(--surface);border-radius:var(--r);border:1px solid var(--border);padding:24px;width:500px;max-width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;letter-spacing:-.01em}
+.field{margin-bottom:14px}
+.field:last-child{margin-bottom:0}
+.field label{font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px}
+.field input,.field select,.field textarea{width:100%;padding:9px 12px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;font-family:inherit;transition:border-color .15s}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(24,95,165,.1)}
+.field textarea{resize:vertical;min-height:80px;line-height:1.6}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.submit-btn{width:100%;padding:12px;background:var(--blue);color:#fff;border:none;border-radius:var(--r-sm);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s;margin-top:8px}
+.submit-btn:hover{background:#0C447C}
+.step-bar{display:flex;align-items:center;margin-bottom:20px}
+.step-item{display:flex;align-items:center;gap:6px;flex:1}
+.step-dot{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;border:2px solid}
+.step-dot.done{background:var(--teal);color:#fff;border-color:var(--teal)}
+.step-dot.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.step-dot.todo{background:var(--surface);color:var(--text4);border-color:var(--border)}
+.step-line{flex:1;height:1px;background:var(--border);margin:0 6px}
+.step-lbl{font-size:11px;color:var(--text4)}
+.step-lbl.active{color:var(--text);font-weight:600}
+.link-box{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 14px;display:flex;align-items:center;gap:8px;margin-top:10px}
+.link-url{font-size:11px;color:var(--text3);font-family:monospace;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.empty{text-align:center;padding:2.5rem;color:var(--text4)}
+.empty i{font-size:28px;display:block;margin-bottom:10px}
+
+/* ── 圖例 ── */
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--text4);align-items:center;margin-bottom:12px}
+.legend-item{display:flex;align-items:center;gap:5px}
+
+@media(max-width:680px){
+  .stats,.metrics-row{grid-template-columns:1fr 1fr}
+  .date-strip,.budget-grid{grid-template-columns:1fr}
+  .page{padding:12px}
+  .topnav{padding:0 12px}
+  .nav-link{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- 頂部導覽 -->
+<nav class="topnav">
+  <div class="logo">
+    <div class="logo-icon"><i class="ti ti-building-factory-2" style="color:#fff;font-size:15px"></i></div>
+    工程管理系統
+  </div>
+  <div class="breadcrumb" id="breadcrumb">
+    <span class="bc-cur">工程專案</span>
+  </div>
+  <div class="topnav-right">
+    <button class="nav-link" id="nl-list"   onclick="goPage('list')"  ><i class="ti ti-layout-dashboard"></i> 專案總覽</button>
+    <button class="nav-link" id="nl-myproj" onclick="goPage('myproj')"><i class="ti ti-folders"></i> 我的專案</button>
+    <button class="nav-link" id="nl-review" onclick="goPage('review')"><i class="ti ti-eye-check"></i> 審核日誌</button>
+    <span class="role-badge"><i class="ti ti-hard-hat" style="font-size:11px"></i> 工程師</span>
+    <button class="user-pill"><i class="ti ti-user-circle" style="font-size:14px"></i> 王大偉</button>
+  </div>
+</nav>
+
+<!-- 主列表頁 -->
+<div class="page active" id="page-list">
+  <div class="page-hd">
+    <div>
+      <div class="page-title">工程專案總覽</div>
+      <div class="page-sub" id="list-sub"></div>
+    </div>
+    <button class="btn pri" onclick="openNewProjModal()"><i class="ti ti-plus"></i> 申請新專案</button>
+  </div>
+  <div class="stats" id="stats"></div>
+  <div id="alert-area"></div>
+  <div class="filter-bar" id="filter-bar"></div>
+  <div class="mgr-filter-bar" id="mgr-bar">
+    <div class="av" id="mgr-bar-av" style="width:24px;height:24px;font-size:11px"></div>
+    <span id="mgr-bar-lbl"></span>
+    <button class="btn sm" onclick="clearMgr()" style="margin-left:auto"><i class="ti ti-x"></i> 清除篩選</button>
+  </div>
+  <div class="legend" id="legend"></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th style="width:40px">#</th>
+        <th style="min-width:260px">專案名稱</th>
+        <th style="width:86px">負責人</th>
+        <th style="width:84px">狀態</th>
+        <th style="width:106px">預計進度</th>
+        <th style="width:106px">實際進度</th>
+        <th style="width:48px" class="r">落差</th>
+        <th style="width:96px" class="r">預算金額</th>
+        <th style="width:96px" class="r">契約金額</th>
+        <th style="width:88px">完工日</th>
+        <th style="width:108px">操作</th>
+      </tr></thead>
+      <tbody id="proj-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 我的專案頁 -->
+<div class="page" id="page-myproj">
+  <div class="page-hd">
+    <div>
+      <div class="page-title">我的專案</div>
+      <div class="page-sub">你負責的工程專案，擁有完整 CRUD 權限</div>
+    </div>
+    <button class="btn pri" onclick="openNewProjModal()"><i class="ti ti-plus"></i> 申請新專案</button>
+  </div>
+  <div id="myproj-content"></div>
+</div>
+
+<!-- 審核日誌頁 -->
+<div class="page" id="page-review">
+  <div class="page-hd">
+    <div>
+      <div class="page-title">審核分包商日誌</div>
+      <div class="page-sub">分包商回報的施工日誌，由你審核後才算數</div>
+    </div>
+  </div>
+  <div id="review-content"></div>
+</div>
+
+<!-- 專案詳情頁 -->
+<div class="page" id="page-detail">
+  <div id="detail-hero-wrap"></div>
+  <div class="metrics-row" id="detail-metrics"></div>
+  <div id="detail-prog-bar"></div>
+  <div class="tab-bar" id="detail-tabs"></div>
+  <div id="detail-content"></div>
+</div>
+
+<input type="file" id="file-input" multiple accept=".pdf,.dwg,.dxf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif" style="display:none">
+<div id="modal-area"></div>
+
+<script>
+/* ══ 資料 ══ */
+const ME = 'u3';
+const ENG = {
+  u3:{name:'王大偉',role:'土木工程師',cls:'av-c'},
+  u5:{name:'李國豪',role:'安全工程師',cls:'av-e'},
+  u6:{name:'張雅婷',role:'建築師',     cls:'av-d'},
+};
+const PROJECTS = [
+  {id:1, name:'台北劍潭大樓5樓辦公室改裝', mgr:'u3', status:'施工',    plan:60, real:40, budget:1200000, contract:990000,  startDate:'2025-04-01', endDate:'2025-09-30', duration:183,
+   tasks:[
+     {id:'t1',name:'拆除舊有隔間',  eng:'u3',progress:100,due:'2025-06-10',status:'done'},
+     {id:'t2',name:'水電管線配置',  eng:'u4',progress:80, due:'2025-07-05',status:'doing'},
+     {id:'t3',name:'新隔間牆施作',  eng:'u4',progress:30, due:'2025-07-20',status:'doing'},
+     {id:'t4',name:'天花板工程',    eng:'u3',progress:0,  due:'2025-08-01',status:'todo'},
+     {id:'t5',name:'地板材料鋪設',  eng:'u3',progress:0,  due:'2025-08-15',status:'todo'},
+   ],
+   files:[
+     {id:'f1',name:'施工契約書_2025-04-01.pdf',ext:'pdf',size:'2.4 MB',by:'王大偉',date:'2025/04/01',url:'#'},
+     {id:'f2',name:'建築平面圖_5F_v2.dwg',    ext:'dwg',size:'8.1 MB',by:'張雅婷',date:'2025/04/15',url:'#'},
+     {id:'f3',name:'預算明細表_2025Q2.xlsx',  ext:'xlsx',size:'1.2 MB',by:'王大偉',date:'2025/05/03',url:'#'},
+   ],
+   subcontractors:[{id:'s1',name:'宏鑫泥作',tasks:['t2','t3'],link:'https://cm.example.com/fill?p=1&token=abc123'}],
+   pendingLogs:[{id:'l1',sub:'宏鑫泥作',date:'2025-06-24',workers:18,weather:'☀️ 晴天',note:'防水底層施作進度正常，預計明日完成底層',items:[{name:'水電管線配置',progress:80}],status:'pending'}]},
+
+  {id:2, name:'台北東六機房新建工程',     mgr:'u3', status:'規劃設計',plan:0,  real:0,  budget:0,       contract:0,       startDate:'',          endDate:'2026-12-31', duration:0,
+   tasks:[
+     {id:'t6',name:'場地評估與環境調查',eng:'u3',progress:100,due:'2025-06-30',status:'done'},
+     {id:'t7',name:'建築設計圖繪製',   eng:'u3',progress:35, due:'2025-07-31',status:'doing'},
+     {id:'t8',name:'建照申請',         eng:'u3',progress:0,  due:'2025-09-30',status:'todo'},
+   ],
+   files:[{id:'f4',name:'需求規格書_v1.pdf',ext:'pdf',size:'1.2 MB',by:'王大偉',date:'2025/06/01',url:'#'}],
+   subcontractors:[],
+   pendingLogs:[]},
+
+  {id:3, name:'南港展覽館空調系統更新',   mgr:'u5', status:'驗收',    plan:100,real:98, budget:3200000, contract:3100000, startDate:'2024-10-01', endDate:'2025-06-30', duration:273,
+   tasks:[
+     {id:'t9', name:'舊設備拆除',  eng:'u5',progress:100,due:'2024-11-30',status:'done'},
+     {id:'t10',name:'新主機安裝',  eng:'u5',progress:100,due:'2025-02-28',status:'done'},
+     {id:'t11',name:'系統測試調校',eng:'u5',progress:100,due:'2025-06-15',status:'done'},
+     {id:'t12',name:'驗收文件整理',eng:'u5',progress:90, due:'2025-06-30',status:'doing'},
+   ],
+   files:[
+     {id:'f5',name:'竣工圖_空調系統.dwg',ext:'dwg',size:'12.3 MB',by:'李國豪',date:'2025/06/18',url:'#'},
+     {id:'f6',name:'測試報告書.pdf',    ext:'pdf',size:'4.1 MB', by:'李國豪',date:'2025/06/20',url:'#'},
+   ],
+   subcontractors:[],pendingLogs:[]},
+
+  {id:4, name:'信義區辦公大樓外牆修繕',   mgr:'u5', status:'工程發包',plan:0,  real:0,  budget:850000,  contract:720000,  startDate:'',          endDate:'2025-11-30', duration:0,
+   tasks:[
+     {id:'t13',name:'外牆現況調查',eng:'u5',progress:100,due:'2025-05-31',status:'done'},
+     {id:'t14',name:'廠商詢比價',  eng:'u5',progress:60, due:'2025-07-15',status:'doing'},
+   ],
+   files:[{id:'f7',name:'外牆調查報告.pdf',ext:'pdf',size:'5.6 MB',by:'李國豪',date:'2025/05/28',url:'#'}],
+   subcontractors:[],pendingLogs:[]},
+
+  {id:5, name:'內湖廠房屋頂防水工程',     mgr:'u6', status:'規劃設計',plan:0,  real:0,  budget:0,       contract:0,       startDate:'',          endDate:'2026-03-31', duration:0,
+   tasks:[{id:'t15',name:'現場勘查',eng:'u6',progress:30,due:'2025-07-10',status:'doing'}],
+   files:[],subcontractors:[],pendingLogs:[]},
+];
+
+const SCLS  = {規劃設計:'b-plan',工程發包:'b-bid',施工:'b-work',驗收:'b-chk'};
+const TCOL  = {done:'#0F6E56',doing:'#185FA5',todo:'#A0AEC0'};
+const TLBL  = {done:'已完成',doing:'進行中',todo:'待辦'};
+const EXT_ICO = {pdf:'ti-file-type-pdf',dwg:'ti-vector-triangle',dxf:'ti-vector-triangle',doc:'ti-file-type-doc',docx:'ti-file-type-doc',xls:'ti-file-spreadsheet',xlsx:'ti-file-spreadsheet',jpg:'ti-photo',jpeg:'ti-photo',png:'ti-photo',gif:'ti-photo'};
+const EXT_CLS = {pdf:'ico-pdf',dwg:'ico-dwg',dxf:'ico-dwg',doc:'ico-doc',docx:'ico-doc',xls:'ico-xls',xlsx:'ico-xls',jpg:'ico-img',jpeg:'ico-img',png:'ico-img',gif:'ico-img'};
+
+const fmt    = n => n ? '$'+Number(n).toLocaleString() : '—';
+const remain = p => p.budget && p.contract ? p.budget - p.contract : null;
+const diff   = p => p.real - p.plan;
+const diffStr= d => d===0?'—':(d>0?'+':'')+d+'%';
+const diffCls= d => d>0?'diff-pos':d<0?'diff-neg':'diff-zero';
+const noWork = p => ['規劃設計','工程発包'].includes(p.status);
+const progCol= (r,pl)=>{const d=r-pl;return d<-10?'var(--red)':d<0?'var(--amber)':'var(--blue)'};
+const taskAvg= t => t.length ? Math.round(t.reduce((a,x)=>a+x.progress,0)/t.length) : 0;
+const isOver = t => t.status!=='done' && t.due && new Date(t.due)<new Date();
+const isOwn  = p => p.mgr === ME;
+const fmtSz  = b => b<1024?b+' B':b<1048576?Math.round(b/1024)+' KB':(b/1048576).toFixed(1)+' MB';
+
+let filterStatus='全部', filterMgr='', activeTab={}, uploading={}, activeProjId=null, curPage='list';
+
+/* ══ 導覽 ══ */
+function goPage(id, projId) {
+  curPage = id;
+  if (projId !== undefined) activeProjId = projId;
+  ['list','myproj','review','detail'].forEach(p => {
+    document.getElementById('page-'+p).classList.toggle('active', p===id);
+  });
+  ['list','myproj','review'].forEach(k => {
+    const b = document.getElementById('nl-'+k);
+    if(b) b.classList.toggle('active', k===id);
+  });
+  // breadcrumb
+  const bc = document.getElementById('breadcrumb');
+  if (id==='detail' && activeProjId) {
+    const p = PROJECTS.find(x=>x.id===activeProjId);
+    bc.innerHTML = `<span class="bc-item" onclick="goPage('list')">工程專案</span><span class="bc-sep"><i class="ti ti-chevron-right" style="font-size:12px"></i></span><span class="bc-cur">${p?p.name:''}</span>`;
+    renderDetailPage(activeProjId);
+  } else {
+    const labels={list:'工程專案',myproj:'我的專案',review:'審核日誌'};
+    bc.innerHTML = `<span class="bc-cur">${labels[id]||id}</span>`;
+  }
+  if (id==='list')   { renderStats(); renderAlerts(); renderFilters(); renderTable(); }
+  if (id==='myproj') renderMyProj();
+  if (id==='review') renderReview();
+  window.scrollTo(0,0);
+}
+
+/* ══ 主列表 ══ */
+function renderStats() {
+  const pending = PROJECTS.filter(isOwn).flatMap(p=>p.pendingLogs).filter(l=>l.status==='pending').length;
+  const myCount = PROJECTS.filter(isOwn).length;
+  const totB    = PROJECTS.reduce((a,p)=>a+p.budget,0);
+  const totR    = PROJECTS.reduce((a,p)=>a+(remain(p)||0),0);
+  document.getElementById('list-sub').textContent =
+    new Date().toLocaleDateString('zh-TW',{year:'numeric',month:'long',day:'numeric'}) + ' · 工程師視角';
+  document.getElementById('stats').innerHTML = `
+    <div class="stat-card"><div class="stat-val">${PROJECTS.length}</div><div class="stat-lbl">全部專案</div><div class="stat-sub">我負責 ${myCount} 個</div></div>
+    <div class="stat-card"><div class="stat-val">${PROJECTS.filter(p=>p.status==='施工').length}</div><div class="stat-lbl">施工中</div><div class="stat-sub">${PROJECTS.filter(p=>p.status==='規劃設計').length} 個規劃中</div></div>
+    <div class="stat-card"><div class="stat-val" style="font-size:20px">${totB?'$'+Math.round(totB/10000)+'萬':'—'}</div><div class="stat-lbl">預算總額</div><div class="stat-sub">所有專案合計</div></div>
+    <div class="stat-card"><div class="stat-val" style="font-size:20px;color:${totR<0?'var(--red)':'inherit'}">${totB?'$'+Math.round(totR/10000)+'萬':'—'}</div><div class="stat-lbl">剩餘預算</div><div class="stat-sub" style="color:${pending>0?'var(--amber)':'var(--text4)'}">${pending>0?pending+' 筆日誌待審核':'日誌全數已審'}</div></div>`;
+}
+
+function renderAlerts() {
+  const pending = PROJECTS.filter(isOwn).flatMap(p=>p.pendingLogs).filter(l=>l.status==='pending').length;
+  document.getElementById('alert-area').innerHTML = pending>0
+    ? `<div class="alert alert-warn"><i class="ti ti-bell" style="font-size:16px;flex-shrink:0"></i><span>有 <strong>${pending}</strong> 筆分包商施工日誌待你審核。<button class="btn sm" style="margin-left:8px" onclick="goPage('review')">前往審核 →</button></span></div>`
+    : '';
+}
+
+function renderFilters() {
+  const sts = ['全部','規劃設計','工程發包','施工','驗收'];
+  const mgrChips = Object.entries(ENG).map(([id,e]) =>
+    `<button class="chip${filterMgr===id?' mgr-active':''}" onclick="setMgr('${id}')" style="display:flex;align-items:center;gap:4px">
+      <div class="av ${e.cls}" style="width:16px;height:16px;font-size:7px">${e.name[0]}</div>${e.name.slice(0,3)}
+    </button>`).join('');
+  document.getElementById('filter-bar').innerHTML =
+    `<span class="filter-label">狀態</span>`+
+    sts.map(s=>`<button class="chip${filterStatus===s?' active':''}" onclick="setSts('${s}')">${s}</button>`).join('')+
+    `<div class="filter-sep"></div><span class="filter-label">負責人</span>`+mgrChips;
+
+  const mb = document.getElementById('mgr-bar');
+  if (filterMgr && ENG[filterMgr]) {
+    const e = ENG[filterMgr]; mb.classList.add('show');
+    const av = document.getElementById('mgr-bar-av');
+    av.textContent = e.name[0]; av.className = 'av '+e.cls;
+    av.style.cssText = 'width:24px;height:24px;font-size:11px';
+    document.getElementById('mgr-bar-lbl').textContent =
+      `篩選中：${e.name} 負責的專案（共 ${PROJECTS.filter(p=>p.mgr===filterMgr).length} 個）`;
+  } else { mb.classList.remove('show'); }
+
+  document.getElementById('legend').innerHTML = `
+    <div class="legend-item"><div style="width:3px;height:16px;background:var(--teal);border-radius:2px"></div><span>我負責（可編輯）</span></div>
+    <div class="legend-item"><div style="width:3px;height:16px;background:var(--border);border-radius:2px"></div><span>他人負責（唯讀）</span></div>`;
+}
+
+function setSts(s) { filterStatus=s; renderFilters(); renderTable(); }
+function setMgr(id) { filterMgr = filterMgr===id?'':id; renderFilters(); renderTable(); }
+function clearMgr() { filterMgr=''; renderFilters(); renderTable(); }
+function clickMgr(id, ev) { ev.stopPropagation(); setMgr(id); }
+
+function renderTable() {
+  let list = PROJECTS;
+  if (filterStatus!=='全部') list = list.filter(p=>p.status===filterStatus);
+  if (filterMgr) list = list.filter(p=>p.mgr===filterMgr);
+  const tbody = document.getElementById('proj-tbody');
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="11" class="empty"><i class="ti ti-folder-off"></i>無符合條件的專案</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map(p => {
+    const own = isOwn(p);
+    const e   = ENG[p.mgr];
+    const d   = diff(p);
+    const rem = remain(p);
+    const nw  = ['規劃設計','工程発包'].includes(p.status);
+    return `<tr class="proj-row row-${own?'mine':'other'}" onclick="goPage('detail',${p.id})">
+      <td style="color:var(--text4);font-size:12px;font-weight:600">${p.id}</td>
+      <td>
+        <div class="name-cell">
+          <i class="ti ti-chevron-right" style="font-size:12px;color:var(--text4);flex-shrink:0"></i>
+          <span class="name-text">${p.name}</span>
+          ${own ? `<span class="mine-tag"><i class="ti ti-user" style="font-size:9px"></i> 我的</span>`
+                : `<span class="readonly-tag"><i class="ti ti-eye" style="font-size:9px"></i> 唯讀</span>`}
+          ${p.files&&p.files.length ? `<span class="attach-pill"><i class="ti ti-paperclip" style="font-size:10px"></i>${p.files.length}</span>` : ''}
+        </div>
+      </td>
+      <td>
+        <div class="mgr-chip${filterMgr===p.mgr?' hl':''}" onclick="clickMgr('${p.mgr}',event)">
+          <div class="av ${e?e.cls:''}" style="width:22px;height:22px;font-size:9px">${e?e.name[0]:''}</div>
+          <span style="font-size:12px;font-weight:500">${e?e.name.slice(0,3)+'君':''}</span>
+        </div>
+      </td>
+      <td><span class="badge ${SCLS[p.status]||'b-plan'}">${p.status}</span></td>
+      <td>${nw ? `<span style="color:var(--text4);font-size:12px">—</span>` :
+        `<div class="prog-cell"><div class="prog-track"><div class="prog-fill" style="width:${p.plan}%;background:var(--text4)"></div></div><span class="prog-num">${p.plan}%</span></div>`}</td>
+      <td>${nw ? `<span style="color:var(--text4);font-size:12px">—</span>` :
+        `<div class="prog-cell"><div class="prog-track"><div class="prog-fill" style="width:${p.real}%;background:${progCol(p.real,p.plan)}"></div></div><span class="prog-num">${p.real}%</span></div>`}</td>
+      <td class="r"><span class="${diffCls(d)}">${nw?'—':diffStr(d)}</span></td>
+      <td class="r" style="font-size:12px;font-weight:600">${p.budget?fmt(p.budget):'—'}</td>
+      <td class="r" style="font-size:12px;color:${rem!==null&&rem<0?'var(--red)':'inherit'}">${rem!==null?fmt(rem):'—'}</td>
+      <td style="font-size:12px">${p.endDate||'—'}</td>
+      <td>
+        <div style="display:flex;gap:5px">
+          <button class="btn sm" onclick="event.stopPropagation();goPage('detail',${p.id})"><i class="ti ti-eye"></i></button>
+          ${own
+            ? `<button class="btn sm pri" onclick="event.stopPropagation();toast('編輯：${p.name}')"><i class="ti ti-edit"></i> 編輯</button>`
+            : `<button class="btn sm readonly" title="非你負責的專案"><i class="ti ti-lock"></i> 唯讀</button>`}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+/* ══ 詳情頁 ══ */
+function renderDetailPage(id) {
+  const p   = PROJECTS.find(x=>x.id===id); if(!p) return;
+  const own = isOwn(p);
+  const e   = ENG[p.mgr];
+  const avg = taskAvg(p.tasks);
+  const rem = remain(p);
+  const d   = diff(p);
+  const dur = p.duration || (p.startDate&&p.endDate ? Math.round((new Date(p.endDate)-new Date(p.startDate))/864e5) : null);
+  const nw  = ['規劃設計','工程発包'].includes(p.status);
+  const done = p.tasks.filter(t=>t.status==='done').length;
+  const doing= p.tasks.filter(t=>t.status==='doing').length;
+  const tab = activeTab[id] || 'tasks';
+
+  // Hero
+  document.getElementById('detail-hero-wrap').innerHTML = `
+    <div class="detail-hero">
+      <div class="detail-hero-top">
+        <div>
+          <div class="detail-name">${p.name}</div>
+          <div class="detail-meta">
+            <span class="badge ${SCLS[p.status]||'b-plan'}" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.2)">${p.status}</span>
+            ${e ? `<div class="av ${e.cls}" style="width:20px;height:20px;font-size:9px">${e.name[0]}</div><span style="font-size:13px;color:rgba(255,255,255,.7)">${e.name} · ${e.role}</span>` : ''}
+            ${own ? `<span style="font-size:11px;background:rgba(15,110,86,.3);color:#9FE1CB;border:1px solid rgba(15,110,86,.4);border-radius:20px;padding:2px 8px">我負責</span>`
+                  : `<span style="font-size:11px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:2px 8px"><i class="ti ti-eye" style="font-size:10px"></i> 唯讀</span>`}
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn ghost" onclick="goPage('list')"><i class="ti ti-arrow-left"></i> 返回</button>
+          ${own ? `
+            <button class="btn ghost" onclick="toast('編輯專案基本資料')"><i class="ti ti-edit"></i> 編輯</button>
+            <button class="btn ghost" style="background:rgba(255,255,255,.12)" onclick="openAssignModal(${p.id})"><i class="ti ti-link"></i> 指派分包商</button>` : ''}
+        </div>
+      </div>
+      <div class="date-strip">
+        <div class="ds"><div class="ds-lbl"><i class="ti ti-calendar-event" style="font-size:11px"></i> 契約開工日</div><div class="ds-val">${p.startDate||'—'}</div></div>
+        <div class="ds"><div class="ds-lbl"><i class="ti ti-calendar-check" style="font-size:11px"></i> 預定完工日</div><div class="ds-val">${p.endDate||'—'}</div></div>
+        <div class="ds"><div class="ds-lbl"><i class="ti ti-clock" style="font-size:11px"></i> 工期</div><div class="ds-val">${dur?dur+' 天':'—'}</div></div>
+      </div>
+      ${!own ? `<div class="readonly-hero-banner"><i class="ti ti-lock" style="font-size:14px;flex-shrink:0"></i><span>你正在檢視 <strong>${e?e.name:''}</strong> 負責的專案，此頁為唯讀模式，所有編輯操作已停用。</span></div>` : ''}
+    </div>`;
+
+  // 指標
+  document.getElementById('detail-metrics').innerHTML = `
+    <div class="metric"><div class="metric-lbl">工項進度</div><div class="metric-val">${avg}%</div></div>
+    <div class="metric"><div class="metric-lbl">完成 / 進行 / 待辦</div><div class="metric-val" style="font-size:18px">${done}<span style="color:var(--text4);font-size:14px"> / ${doing} / ${p.tasks.length-done-doing}</span></div></div>
+    <div class="metric"><div class="metric-lbl">預算金額</div><div class="metric-val" style="font-size:18px">${p.budget?fmt(p.budget):'—'}</div></div>
+    <div class="metric"><div class="metric-lbl">剩餘預算</div><div class="metric-val" style="font-size:18px;color:${rem!==null&&rem<0?'var(--red)':'inherit'}">${rem!==null?fmt(rem):'—'}</div></div>`;
+
+  // 進度條
+  document.getElementById('detail-prog-bar').innerHTML = !nw ? `
+    <div class="big-bar-wrap">
+      <div class="big-bar-lbl"><span>實際進度 ${p.real}%</span><span>預計進度 ${p.plan}%</span></div>
+      <div class="big-bar"><div class="big-fill" style="width:${p.real}%;background:${progCol(p.real,p.plan)}"></div></div>
+    </div>` : '';
+
+  // 頁籤
+  const tabs = [
+    {k:'tasks', l:'工項任務',   i:'ti-checklist'},
+    {k:'files', l:`契約文件 (${p.files.length})`, i:'ti-files'},
+    {k:'budget',l:'預算資訊',   i:'ti-report-money'},
+    {k:'engineer',l:'負責工程師',i:'ti-user'},
+  ];
+  document.getElementById('detail-tabs').innerHTML =
+    tabs.map(t=>`<button class="tab${tab===t.k?' active':''}" onclick="switchTab(${id},'${t.k}')"><i class="ti ${t.i}"></i>${t.l}</button>`).join('');
+
+  // 頁籤內容
+  let html = '';
+  if (tab==='tasks') {
+    const taskRows = p.tasks.map(t => `
+      <div class="task-item">
+        <div class="task-dot" style="background:${TCOL[t.status]}" title="${TLBL[t.status]}"></div>
+        <div class="task-name">${t.name}</div>
+        <div class="task-mini-bar"><div class="task-mini-fill" style="width:${t.progress}%"></div></div>
+        <span class="task-pct">${t.progress}%</span>
+        <span class="badge ${t.status==='done'?'b-chk':t.status==='doing'?'b-work':'b-plan'}" style="font-size:10px">${TLBL[t.status]}</span>
+        <span class="task-due" style="color:${isOver(t)?'var(--red)':'var(--text4)'}"><i class="ti ti-calendar-due" style="font-size:11px"></i> ${t.due.slice(5)}</span>
+        ${own ? `<button class="btn sm" onclick="toast('編輯工項')"><i class="ti ti-edit"></i></button>` : ''}
+      </div>`).join('');
+    html = `<div class="section-card">
+      <div class="section-hd">
+        <span class="section-title">工項清單（${p.tasks.length} 項）</span>
+        ${own ? `<button class="btn sm pri" onclick="toast('新增工項')"><i class="ti ti-plus"></i> 新增工項</button>` : ''}
+      </div>
+      ${taskRows || `<div class="empty"><i class="ti ti-checklist"></i>尚無工項資料</div>`}
+    </div>
+    ${own ? `<div class="section-card">
+      <div class="section-hd">
+        <span class="section-title">分包商指派</span>
+        <button class="btn sm pri" onclick="openAssignModal(${p.id})"><i class="ti ti-plus"></i> 新增指派</button>
+      </div>
+      ${p.subcontractors.length ? p.subcontractors.map(s=>`
+        <div class="sub-chip">
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--amber);flex-shrink:0"></div>
+          <div style="flex:1"><div style="font-size:13px;font-weight:600">${s.name}</div><div style="font-size:11px;color:var(--text4)">指派 ${s.tasks.length} 個工項</div></div>
+          <button class="btn sm" onclick="toast('連結已複製')"><i class="ti ti-copy"></i> 複製連結</button>
+          <button class="btn sm danger" onclick="toast('移除指派')"><i class="ti ti-trash"></i></button>
+        </div>`).join('') : `<div class="empty" style="padding:1.5rem"><i class="ti ti-users-group"></i>尚未指派分包商</div>`}
+    </div>` : ''}`;
+
+  } else if (tab==='files') {
+    const rows = p.files.map(f=>`
+      <div class="file-item">
+        <div class="file-ico ${EXT_CLS[f.ext]||'ico-other'}"><i class="ti ${EXT_ICO[f.ext]||'ti-file'}"></i></div>
+        <div class="file-info">
+          <div class="file-name">${f.name}</div>
+          <div class="file-meta">${f.ext.toUpperCase()} · ${f.size} · 上傳者：${f.by} · ${f.date}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <a class="btn sm" href="${f.url}" target="_blank"><i class="ti ti-download"></i> 下載</a>
+          ${own ? `<button class="btn sm danger" onclick="deleteFile(${id},'${f.id}')"><i class="ti ti-trash"></i></button>` : ''}
+        </div>
+      </div>`).join('');
+    html = `<div class="section-card">
+      <div class="section-hd">
+        <span class="section-title">契約文件與圖說</span>
+        ${own ? `<button class="btn sm pri" onclick="triggerUpload(${id})"><i class="ti ti-upload"></i> 上傳文件</button>` : ''}
+      </div>
+      ${uploading[id] ? `<div class="upload-prog"><div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:500"><span style="display:flex;align-items:center;gap:6px;color:var(--blue)"><i class="ti ti-loader"></i>正在上傳...</span><span style="color:var(--text3)">${uploading[id]}%</span></div><div class="up-track"><div class="up-fill" style="width:${uploading[id]}%"></div></div></div>` : ''}
+      ${rows || `<div class="empty"><i class="ti ti-file-off"></i>尚無文件</div>`}
+      ${own ? `<div class="drop-zone" id="drop-${id}" ondragover="onDrag(event,${id},true)" ondragleave="onDrag(event,${id},false)" ondrop="onDrop(event,${id})" onclick="triggerUpload(${id})">
+        <i class="ti ti-cloud-upload" style="font-size:28px;color:var(--text4);display:block;margin-bottom:10px"></i>
+        <div style="font-size:14px;font-weight:600;color:var(--text2);margin-bottom:5px">拖曳檔案至此，或點擊選擇上傳</div>
+        <div style="font-size:12px;color:var(--text4)">支援：PDF · DWG / DXF · Word · Excel · JPG / PNG · 單檔最大 50MB</div>
+      </div>` : `<div style="text-align:center;padding:1.5rem;color:var(--text4);font-size:13px;border-top:1px solid var(--border-l);margin-top:12px"><i class="ti ti-lock" style="font-size:20px;display:block;margin-bottom:6px"></i>非你負責的專案，無法上傳文件</div>`}
+    </div>`;
+
+  } else if (tab==='budget') {
+    html = remain(p)!==null ? `<div class="section-card">
+      <div class="section-hd"><span class="section-title">預算資訊</span></div>
+      <div class="budget-grid">
+        <div class="budget-item"><div class="budget-lbl">預算金額</div><div class="budget-val">${fmt(p.budget)}</div></div>
+        <div class="budget-item"><div class="budget-lbl">契約金額</div><div class="budget-val">${fmt(p.contract)}</div></div>
+        <div class="budget-item"><div class="budget-lbl">剩餘預算</div><div class="budget-val" style="color:${remain(p)<0?'var(--red)':'var(--green)'}">${fmt(remain(p))}</div></div>
+      </div>
+      <div style="margin-top:16px">
+        <div class="big-bar-lbl"><span>契約 / 預算比</span><span>${Math.round(p.contract/p.budget*100)}%</span></div>
+        <div class="big-bar"><div class="big-fill" style="width:${Math.round(p.contract/p.budget*100)}%;background:var(--blue)"></div></div>
+      </div>
+    </div>` : `<div class="section-card"><div class="empty"><i class="ti ti-report-money"></i>尚未填入預算資料</div></div>`;
+
+  } else if (tab==='engineer') {
+    const others = PROJECTS.filter(x=>x.mgr===p.mgr&&x.id!==p.id);
+    html = `<div class="section-card">
+      <div class="section-hd"><span class="section-title">負責工程師</span></div>
+      <div class="eng-hero">
+        <div class="av ${e?e.cls:''}" style="width:44px;height:44px;font-size:18px">${e?e.name[0]:''}</div>
+        <div style="flex:1"><div style="font-size:16px;font-weight:700;margin-bottom:3px">${e?e.name:'—'}</div><div style="font-size:13px;color:var(--text3)">${e?e.role:''}</div></div>
+        <button class="btn sm" onclick="setMgr('${p.mgr}');goPage('list')"><i class="ti ti-filter"></i> 查看所有專案</button>
+      </div>
+      ${others.length ? `<div style="margin-top:16px">
+        <div class="section-hd" style="margin-bottom:8px"><span class="section-title">其他負責專案（${others.length} 個）</span></div>
+        ${others.map(x=>`<div class="other-proj-row" onclick="goPage('detail',${x.id})">
+          <div class="other-proj-name"><i class="ti ti-chevron-right" style="font-size:12px;color:var(--text4)"></i>${x.name}</div>
+          <span class="badge ${SCLS[x.status]||'b-plan'}">${x.status}</span>
+        </div>`).join('')}
+      </div>` : ''}
+    </div>`;
+  }
+  document.getElementById('detail-content').innerHTML = html;
+}
+
+function switchTab(id, tab) { activeTab[id]=tab; renderDetailPage(id); }
+
+/* ══ 我的專案 ══ */
+function renderMyProj() {
+  const mine = PROJECTS.filter(isOwn);
+  document.getElementById('myproj-content').innerHTML = mine.map(p=>`
+    <div class="section-card">
+      <div class="section-hd">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-size:15px;font-weight:700;letter-spacing:-.01em">${p.name}</span>
+          <span class="badge ${SCLS[p.status]||'b-plan'}">${p.status}</span>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn sm" onclick="goPage('detail',${p.id})"><i class="ti ti-eye"></i> 詳情</button>
+          <button class="btn sm" onclick="toast('編輯專案')"><i class="ti ti-edit"></i> 編輯</button>
+          <button class="btn sm pri" onclick="openAssignModal(${p.id})"><i class="ti ti-link"></i> 指派分包商</button>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
+        <div class="budget-item"><div class="budget-lbl">工項進度</div><div class="budget-val">${taskAvg(p.tasks)}%</div></div>
+        <div class="budget-item"><div class="budget-lbl">預算金額</div><div class="budget-val" style="font-size:16px">${p.budget?fmt(p.budget):'—'}</div></div>
+        <div class="budget-item"><div class="budget-lbl">剩餘預算</div><div class="budget-val" style="font-size:16px;color:${remain(p)!==null&&remain(p)<0?'var(--red)':'inherit'}">${remain(p)!==null?fmt(remain(p)):'—'}</div></div>
+        <div class="budget-item"><div class="budget-lbl">預定完工</div><div class="budget-val" style="font-size:15px">${p.endDate||'—'}</div></div>
+      </div>
+      ${p.tasks.map(t=>`
+        <div class="task-item">
+          <div class="task-dot" style="background:${TCOL[t.status]}"></div>
+          <div class="task-name">${t.name}</div>
+          <div class="task-mini-bar"><div class="task-mini-fill" style="width:${t.progress}%"></div></div>
+          <span class="task-pct">${t.progress}%</span>
+          <span class="task-due" style="color:${isOver(t)?'var(--red)':'var(--text4)'}"><i class="ti ti-calendar-due" style="font-size:11px"></i> ${t.due.slice(5)}</span>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+/* ══ 審核日誌 ══ */
+function renderReview() {
+  const logs = PROJECTS.filter(isOwn).flatMap(p=>p.pendingLogs.map(l=>({...l,projName:p.name})));
+  document.getElementById('review-content').innerHTML = `<div class="section-card">
+    <div class="section-hd"><span class="section-title">待審核（${logs.length}）</span></div>
+    ${logs.length ? logs.map(l=>`
+      <div class="review-item">
+        <div style="width:40px;height:40px;border-radius:var(--r-sm);background:var(--amber-l);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🏗️</div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600;margin-bottom:3px">${l.sub} — ${l.projName}</div>
+          <div style="font-size:11px;color:var(--text4);margin-bottom:5px">${l.date} · ${l.weather} · 出工 ${l.workers} 人</div>
+          <div style="font-size:13px;color:var(--text2)">${l.note}</div>
+          <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+            ${l.items.map(i=>`<span style="font-size:11px;background:var(--bg);padding:2px 8px;border-radius:20px;border:1px solid var(--border);color:var(--text3)"><i class="ti ti-hammer" style="font-size:10px"></i> ${i.name} ${i.progress}%</span>`).join('')}
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+          <button class="btn sm pri" onclick="approveLog('${l.id}',true)"><i class="ti ti-check"></i> 核准</button>
+          <button class="btn sm danger" onclick="approveLog('${l.id}',false)"><i class="ti ti-x"></i> 退回</button>
+        </div>
+      </div>`).join('')
+    : `<div class="empty"><i class="ti ti-check-circle"></i>目前無待審核日誌</div>`}
+  </div>`;
+}
+
+function approveLog(id, ok) {
+  PROJECTS.forEach(p => { p.pendingLogs = p.pendingLogs.filter(l=>l.id!==id); });
+  toast(ok ? '✓ 日誌已核准' : '日誌已退回，通知分包商');
+  renderReview();
+  renderStats();
+  renderAlerts();
+}
+
+/* ══ 申請新專案 Modal ══ */
+function openNewProjModal() {
+  let step = 1;
+  function draw() {
+    const sb = [{n:1,l:'基本資訊'},{n:2,l:'工期預算'},{n:3,l:'確認送審'}];
+    const bar = sb.map((s,i)=>`<div class="step-item" style="${i===sb.length-1?'flex:none':''}">
+      <div class="step-dot ${s.n<step?'done':s.n===step?'active':'todo'}">${s.n<step?'✓':s.n}</div>
+      <span class="step-lbl ${s.n===step?'active':''}">${s.l}</span>
+      ${i<sb.length-1?`<div class="step-line"></div>`:''}</div>`).join('');
+    let c = '';
+    if (step===1) {
+      c=`<div class="field"><label>工程名稱 *</label><input id="np-name" placeholder="例：台北南三機房擴建工程"></div>
+         <div class="field-row">
+           <div class="field"><label>工程類型</label><select><option>機房新建</option><option>辦公室裝修</option><option>外牆修繕</option><option>機電工程</option></select></div>
+           <div class="field"><label>所在地</label><input placeholder="例：台北市信義區"></div>
+         </div>
+         <div class="field"><label>工程說明</label><textarea placeholder="簡要說明工程範圍與需求..."></textarea></div>`;
+    } else if (step===2) {
+      c=`<div class="field-row">
+           <div class="field"><label>預計開工日</label><input type="date" id="np-start" value="2025-08-01"></div>
+           <div class="field"><label>預定完工日</label><input type="date" id="np-end" value="2026-03-31"></div>
+         </div>
+         <div class="field-row">
+           <div class="field"><label>估計預算（元）</label><input type="number" id="np-budget" placeholder="0"></div>
+           <div class="field"><label>優先程度</label><select><option>正常</option><option>高</option><option>緊急</option></select></div>
+         </div>
+         <div class="alert alert-info" style="margin-top:4px"><i class="ti ti-info-circle" style="font-size:15px;flex-shrink:0"></i><span>申請送出後將通知主管審核，核准後專案才正式建立。</span></div>`;
+    } else {
+      c=`<div class="alert alert-ok"><i class="ti ti-check-circle" style="font-size:15px;flex-shrink:0"></i><span>確認後申請將送交主管審核，請確認資訊無誤。</span></div>
+         <div style="background:var(--bg);border-radius:var(--r-sm);padding:14px;font-size:13px;line-height:2.2;border:1px solid var(--border-l)">
+           <div style="display:flex;justify-content:space-between"><span style="color:var(--text3)">工程名稱</span><strong>${document.getElementById('np-name')?.value||'（未填寫）'}</strong></div>
+           <div style="display:flex;justify-content:space-between"><span style="color:var(--text3)">預計開工</span><span>${document.getElementById('np-start')?.value||'—'}</span></div>
+           <div style="display:flex;justify-content:space-between"><span style="color:var(--text3)">預定完工</span><span>${document.getElementById('np-end')?.value||'—'}</span></div>
+           <div style="display:flex;justify-content:space-between"><span style="color:var(--text3)">估計預算</span><span>${document.getElementById('np-budget')?.value?'$'+Number(document.getElementById('np-budget').value).toLocaleString():'—'}</span></div>
+           <div style="display:flex;justify-content:space-between"><span style="color:var(--text3)">送審狀態</span><span class="badge b-pending"><i class="ti ti-clock" style="font-size:10px"></i> 送交主管審核</span></div>
+         </div>`;
+    }
+    document.getElementById('modal-area').innerHTML = `
+      <div class="modal-bg" onclick="if(event.target===this)closeModal()">
+        <div class="modal">
+          <div class="modal-title"><span><i class="ti ti-plus"></i> 申請新專案</span><button class="btn sm" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+          <div class="step-bar">${bar}</div>
+          ${c}
+          <div style="display:flex;gap:8px;margin-top:18px;justify-content:space-between">
+            ${step>1 ? `<button class="btn" onclick="step--;draw()"><i class="ti ti-arrow-left"></i> 上一步</button>` : `<button class="btn danger" onclick="closeModal()">取消</button>`}
+            ${step<3 ? `<button class="btn pri" onclick="step++;draw()">下一步 <i class="ti ti-arrow-right"></i></button>`
+                     : `<button class="submit-btn" style="margin:0;flex:1" onclick="closeModal();toast('✓ 申請已送出，等待主管審核')"><i class="ti ti-send"></i> 送出申請</button>`}
+          </div>
+        </div>
+      </div>`;
+  }
+  draw();
+}
+
+/* ══ 指派分包商 Modal ══ */
+function openAssignModal(projId) {
+  const p = PROJECTS.find(x=>x.id===projId); if(!p||!isOwn(p)) return;
+  document.getElementById('modal-area').innerHTML = `
+    <div class="modal-bg" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <div class="modal-title"><span><i class="ti ti-link"></i> 指派分包商</span><button class="btn sm" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+        <div class="alert alert-info" style="margin-bottom:16px"><i class="ti ti-info-circle" style="font-size:15px;flex-shrink:0"></i><span>指派後系統產生專屬填報連結，分包商無需登入即可填報。</span></div>
+        <div class="field"><label>選擇分包商</label>
+          <select id="assign-sub"><option value="">請選擇...</option><option>宏鑫泥作</option><option>統合水電</option><option>鴻運鋼筋</option><option>新光模板</option></select>
+        </div>
+        <div class="field"><label>指派工項（可多選）</label>
+          <div style="border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden">
+            ${p.tasks.filter(t=>t.status!=='done').map(t=>`
+              <label style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border-l);cursor:pointer;font-size:13px">
+                <input type="checkbox" style="width:14px;height:14px;cursor:pointer"> ${t.name}
+                <span style="font-size:11px;color:var(--text4);margin-left:auto">${t.due.slice(5)}</span>
+              </label>`).join('')}
+          </div>
+        </div>
+        <div class="field"><label>填報截止日</label><input type="date" value="2025-07-31"></div>
+        <div class="field"><label>備註說明（給分包商看）</label><textarea placeholder="填報注意事項、特殊要求..."></textarea></div>
+        <button class="submit-btn" onclick="doAssign(${projId})"><i class="ti ti-link"></i> 產出填報連結</button>
+      </div>
+    </div>`;
+}
+
+function doAssign(projId) {
+  const sub = document.getElementById('assign-sub')?.value;
+  if (!sub) { toast('請選擇分包商'); return; }
+  closeModal();
+  const link = `https://cm.example.com/fill?p=${projId}&token=${Math.random().toString(36).slice(2,10)}`;
+  document.getElementById('modal-area').innerHTML = `
+    <div class="modal-bg" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <div class="modal-title"><span style="color:var(--green)"><i class="ti ti-check-circle"></i> 連結已產出</span><button class="btn sm" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+        <div class="alert alert-ok"><i class="ti ti-check" style="font-size:15px;flex-shrink:0"></i><span>${sub} 的填報連結已建立，分包商點連結即可直接填報，無需登入帳號。</span></div>
+        <div style="font-size:12px;font-weight:600;color:var(--text3);margin-bottom:6px">填報連結</div>
+        <div class="link-box">
+          <i class="ti ti-link" style="font-size:14px;color:var(--text4);flex-shrink:0"></i>
+          <span class="link-url">${link}</span>
+          <button class="btn sm" onclick="toast('連結已複製')"><i class="ti ti-copy"></i> 複製</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:16px">
+          <button class="btn" style="flex:1" onclick="toast('已透過 Email 發送')"><i class="ti ti-mail"></i> Email 發送</button>
+          <button class="btn" style="flex:1" onclick="toast('已透過 Line 分享')"><i class="ti ti-brand-line"></i> Line 分享</button>
+          <button class="btn pri" onclick="closeModal()"><i class="ti ti-check"></i> 完成</button>
+        </div>
+      </div>
+    </div>`;
+  toast('✓ 已指派 '+sub+'，填報連結已產出');
+}
+
+/* ══ 文件上傳 ══ */
+function triggerUpload(pid) { const fi=document.getElementById('file-input'); fi.onchange=()=>handleFiles(pid,Array.from(fi.files)); fi.value=''; fi.click(); }
+function onDrag(ev,id,enter) { ev.preventDefault(); const dz=document.getElementById('drop-'+id); if(dz) dz.classList.toggle('drag',enter); }
+function onDrop(ev,id) { ev.preventDefault(); const dz=document.getElementById('drop-'+id); if(dz) dz.classList.remove('drag'); handleFiles(id,Array.from(ev.dataTransfer.files)); }
+
+function handleFiles(pid, files) {
+  const p = PROJECTS.find(x=>x.id===pid); if(!p||!files.length||!isOwn(p)) return;
+  const ok = ['pdf','dwg','dxf','doc','docx','xls','xlsx','jpg','jpeg','png','gif'];
+  const valid = files.filter(f=>ok.includes(f.name.split('.').pop().toLowerCase()));
+  if (!valid.length) { toast('不支援此格式'); return; }
+  let pct = 0; uploading[pid]=pct; renderDetailPage(pid);
+  const t = setInterval(()=>{
+    pct = Math.min(pct+Math.floor(Math.random()*18)+5,95); uploading[pid]=pct; renderDetailPage(pid);
+    if (pct>=95) { clearInterval(t); setTimeout(()=>{
+      valid.forEach(f=>{ const ext=f.name.split('.').pop().toLowerCase();
+        p.files.push({id:'f'+Date.now()+Math.random(),name:f.name,ext,size:fmtSz(f.size),by:'王大偉',date:new Date().toLocaleDateString('zh-TW'),url:'#'}); });
+      delete uploading[pid]; renderDetailPage(pid); toast(`✓ ${valid.length} 個文件上傳完成`);
+    },350); }
+  },160);
+}
+
+function deleteFile(pid, fid) {
+  const p = PROJECTS.find(x=>x.id===pid); if(!p||!isOwn(p)) return;
+  if (!confirm('確定刪除此文件？')) return;
+  p.files = p.files.filter(f=>f.id!==fid);
+  renderDetailPage(pid); toast('文件已刪除');
+}
+
+function closeModal() { document.getElementById('modal-area').innerHTML=''; }
+
+/* ══ Toast ══ */
+let _tt;
+function toast(msg) {
+  let el = document.getElementById('_toast');
+  if (!el) { el=document.createElement('div'); el.id='_toast';
+    Object.assign(el.style,{position:'fixed',bottom:'24px',left:'50%',transform:'translateX(-50%)',
+      background:'#1B2A3B',color:'#fff',padding:'10px 20px',borderRadius:'24px',fontSize:'13px',
+      fontWeight:'500',zIndex:'9999',opacity:'0',transition:'opacity .2s',
+      pointerEvents:'none',whiteSpace:'nowrap',boxShadow:'0 4px 16px rgba(0,0,0,.25)'});
+    document.body.appendChild(el); }
+  el.textContent=msg; el.style.opacity='1';
+  clearTimeout(_tt); _tt=setTimeout(()=>el.style.opacity='0',2500);
+}
+
+/* ══ 啟動 ══ */
+goPage('list');
+</script>
+</body>
+</html>

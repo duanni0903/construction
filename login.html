@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工程管理系統 — 登入</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1B2A3B;--blue:#185FA5;--blue-l:#E6F1FB;--blue-m:#B5D4F4;
+  --green:#0F6E56;--green-l:#E1F5EE;--amber:#854F0B;--amber-l:#FAEEDA;
+  --red:#A32D2D;--red-l:#FCEBEB;--purple:#3C3489;--purple-l:#EEEDFE;
+  --bg:#F2F4F7;--surface:#fff;--border:#DDE1E9;--border-l:#EEF0F5;
+  --text:#18232F;--text2:#4A5568;--text3:#718096;--text4:#A0AEC0;
+  --r:10px;--r-sm:6px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+.topnav{background:var(--navy);padding:0 20px;height:52px;display:flex;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.logo{display:flex;align-items:center;gap:8px;color:#fff;font-size:14px;font-weight:600;letter-spacing:.01em}
+.logo-icon{width:28px;height:28px;background:var(--blue);border-radius:6px;display:flex;align-items:center;justify-content:center}
+.wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:2rem}
+.login-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:32px;width:400px;max-width:100%;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.login-title{font-size:20px;font-weight:700;color:var(--text);letter-spacing:-.01em;margin-bottom:4px}
+.login-sub{font-size:13px;color:var(--text3);margin-bottom:24px}
+.field{margin-bottom:14px}
+.field label{font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px}
+.field input{width:100%;padding:9px 12px;border-radius:var(--r-sm);border:1px solid var(--border);font-size:13px;font-family:inherit;color:var(--text);transition:border-color .15s}
+.field input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(24,95,165,.1)}
+.err{font-size:12px;color:var(--red);margin-top:6px;display:none}
+.login-btn{width:100%;padding:11px;background:var(--blue);color:#fff;border:none;border-radius:var(--r-sm);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:4px}
+.login-btn:hover{background:#0C447C}
+.divider{display:flex;align-items:center;gap:10px;margin:20px 0;color:var(--text4);font-size:12px}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.demo-title{font-size:11px;font-weight:600;color:var(--text4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.demo-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.demo-btn{padding:10px 12px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--bg);cursor:pointer;font-size:12px;font-weight:500;text-align:left;font-family:inherit;color:var(--text2);transition:all .15s;display:flex;align-items:center;gap:8px}
+.demo-btn:hover{border-color:var(--text4);background:var(--surface);color:var(--text)}
+.demo-icon{width:28px;height:28px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.d-admin{background:#EEEDFE;color:#3C3489}
+.d-mgr{background:#E6F1FB;color:#185FA5}
+.d-eng{background:#E1F5EE;color:#0F6E56}
+.d-sub{background:#FAEEDA;color:#854F0B}
+.demo-name{font-size:12px;font-weight:600;color:var(--text)}
+.demo-role{font-size:10px;color:var(--text4);margin-top:1px}
+.login-btn:disabled{opacity:.7;cursor:not-allowed}
+.footer{text-align:center;padding:16px;font-size:11px;color:var(--text4)}
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <div class="logo">
+    <div class="logo-icon"><i class="ti ti-building-factory-2" style="color:#fff;font-size:15px"></i></div>
+    工程管理系統
+  </div>
+</nav>
+<div class="wrap">
+  <div class="login-box">
+    <div class="login-title">登入系統</div>
+    <div class="login-sub">請輸入你的帳號與密碼</div>
+    <div class="field">
+      <label for="email">帳號（Email）</label>
+      <input type="email" id="email" placeholder="your@email.com" autocomplete="username">
+    </div>
+    <div class="field">
+      <label for="pw">密碼</label>
+      <input type="password" id="pw" placeholder="••••••••" autocomplete="current-password">
+      <div class="err" id="err">帳號或密碼錯誤，請再試一次</div>
+    </div>
+    <button class="login-btn" onclick="doLogin()"><i class="ti ti-login"></i> 登入</button>
+    <div class="divider">Demo 快速登入</div>
+    <div class="demo-title">選擇角色體驗</div>
+    <div class="demo-grid">
+      <button class="demo-btn" onclick="quickLogin('admin')">
+        <div class="demo-icon d-admin"><i class="ti ti-shield-check"></i></div>
+        <div><div class="demo-name">系統管理員</div><div class="demo-role">admin@example.com</div></div>
+      </button>
+      <button class="demo-btn" onclick="quickLogin('manager')">
+        <div class="demo-icon d-mgr"><i class="ti ti-building-community"></i></div>
+        <div><div class="demo-name">主管（所長）</div><div class="demo-role">director@example.com</div></div>
+      </button>
+      <button class="demo-btn" onclick="quickLogin('engineer')">
+        <div class="demo-icon d-eng"><i class="ti ti-hard-hat"></i></div>
+        <div><div class="demo-name">工程師</div><div class="demo-role">wang@example.com</div></div>
+      </button>
+      <button class="demo-btn" onclick="quickLogin('subcontractor')">
+        <div class="demo-icon d-sub"><i class="ti ti-truck"></i></div>
+        <div><div class="demo-name">分包商</div><div class="demo-role">sub@example.com</div></div>
+      </button>
+    </div>
+  </div>
+</div>
+<div class="footer">© 2025 工程管理系統 · Demo 版本</div>
+<script src="api.js"></script>
+<script>
+// 已登入則直接跳轉
+if (Auth.isLoggedIn()) redirectByRole(Auth.getUser().role);
+
+const ROLE_FILE = {
+  admin:'admin.html', manager:'manager.html',
+  engineer:'engineer.html', subcontractor:'subcontractor.html'
+};
+
+function redirectByRole(role) {
+  window.location.href = ROLE_FILE[role] || 'login.html';
+}
+
+async function doLogin() {
+  const email = document.getElementById('email').value.trim();
+  const pw    = document.getElementById('pw').value;
+  const errEl = document.getElementById('err');
+  const btn   = document.querySelector('.login-btn');
+
+  if (!email || !pw) { errEl.textContent='請輸入帳號與密碼'; errEl.style.display='block'; return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<i class="ti ti-loader" style="animation:spin 1s linear infinite"></i> 登入中...';
+
+  try {
+    const res = await API.login(email, pw);
+    if (res.success) {
+      Auth.save(res.token, res.user);
+      errEl.style.display = 'none';
+      redirectByRole(res.user.role);
+    } else {
+      errEl.textContent = res.error || '帳號或密碼錯誤';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ti ti-login"></i> 登入';
+    }
+  } catch(e) {
+    errEl.textContent = '無法連線，請檢查網路';
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-login"></i> 登入';
+  }
+}
+
+// Demo 快速登入（仍保留，直接帶入帳密）
+const DEMO = {
+  admin:         { email:'admin@example.com',    pw:'admin123' },
+  manager:       { email:'director@example.com', pw:'dir123'   },
+  engineer:      { email:'wang@example.com',     pw:'eng123'   },
+  subcontractor: { email:'sub@example.com',      pw:'sub123'   },
+};
+function quickLogin(role) {
+  const d = DEMO[role];
+  document.getElementById('email').value = d.email;
+  document.getElementById('pw').value    = d.pw;
+  doLogin();
+}
+
+document.getElementById('pw').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+
+// spin 動畫
+const s = document.createElement('style');
+s.textContent = '@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}';
+document.head.appendChild(s);
+</script>
+</body>
+</html>
