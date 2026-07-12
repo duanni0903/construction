@@ -351,86 +351,63 @@ tr.row-other td:first-child{border-left:3px solid transparent}
 <input type="file" id="file-input" multiple accept=".pdf,.dwg,.dxf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif" style="display:none">
 <div id="modal-area"></div>
 
+<script src="api.js"></script>
 <script>
-/* ══ 資料 ══ */
-const ME = 'u3';
-const ENG = {
-  u3:{name:'王大偉',role:'土木工程師',cls:'av-c'},
-  u5:{name:'李國豪',role:'安全工程師',cls:'av-e'},
-  u6:{name:'張雅婷',role:'建築師',     cls:'av-d'},
-};
-const PROJECTS = [
-  {id:1, name:'台北劍潭大樓5樓辦公室改裝', mgr:'u3', status:'施工',    plan:60, real:40, budget:1200000, contract:990000,  startDate:'2025-04-01', endDate:'2025-09-30', duration:183,
-   tasks:[
-     {id:'t1',name:'拆除舊有隔間',  eng:'u3',progress:100,due:'2025-06-10',status:'done'},
-     {id:'t2',name:'水電管線配置',  eng:'u4',progress:80, due:'2025-07-05',status:'doing'},
-     {id:'t3',name:'新隔間牆施作',  eng:'u4',progress:30, due:'2025-07-20',status:'doing'},
-     {id:'t4',name:'天花板工程',    eng:'u3',progress:0,  due:'2025-08-01',status:'todo'},
-     {id:'t5',name:'地板材料鋪設',  eng:'u3',progress:0,  due:'2025-08-15',status:'todo'},
-   ],
-   files:[
-     {id:'f1',name:'施工契約書_2025-04-01.pdf',ext:'pdf',size:'2.4 MB',by:'王大偉',date:'2025/04/01',url:'#'},
-     {id:'f2',name:'建築平面圖_5F_v2.dwg',    ext:'dwg',size:'8.1 MB',by:'張雅婷',date:'2025/04/15',url:'#'},
-     {id:'f3',name:'預算明細表_2025Q2.xlsx',  ext:'xlsx',size:'1.2 MB',by:'王大偉',date:'2025/05/03',url:'#'},
-   ],
-   subcontractors:[{id:'s1',name:'宏鑫泥作',tasks:['t2','t3'],link:'https://cm.example.com/fill?p=1&token=abc123'}],
-   pendingLogs:[{id:'l1',sub:'宏鑫泥作',date:'2025-06-24',workers:18,weather:'☀️ 晴天',note:'防水底層施作進度正常，預計明日完成底層',items:[{name:'水電管線配置',progress:80}],status:'pending'}]},
+// ── 登入守衛 ──
+if (!requireAuth(['engineer'])) { /* 已跳轉 */ }
+const _cu = Auth.getUser();
+if (_cu) document.querySelector('.user-pill').innerHTML =
+  `<i class="ti ti-user-circle" style="font-size:14px"></i> ${_cu.name}`;
 
-  {id:2, name:'台北東六機房新建工程',     mgr:'u3', status:'規劃設計',plan:0,  real:0,  budget:0,       contract:0,       startDate:'',          endDate:'2026-12-31', duration:0,
-   tasks:[
-     {id:'t6',name:'場地評估與環境調查',eng:'u3',progress:100,due:'2025-06-30',status:'done'},
-     {id:'t7',name:'建築設計圖繪製',   eng:'u3',progress:35, due:'2025-07-31',status:'doing'},
-     {id:'t8',name:'建照申請',         eng:'u3',progress:0,  due:'2025-09-30',status:'todo'},
-   ],
-   files:[{id:'f4',name:'需求規格書_v1.pdf',ext:'pdf',size:'1.2 MB',by:'王大偉',date:'2025/06/01',url:'#'}],
-   subcontractors:[],
-   pendingLogs:[]},
+// ── 狀態 ──
+let PROJECTS  = [];
+let ALL_USERS = [];
+let ENG       = {};
+let TASKS_CACHE  = {};
+let FILES_CACHE  = {};
+let LOGS_CACHE   = {};
+let ASSIGNS_CACHE= {};
 
-  {id:3, name:'南港展覽館空調系統更新',   mgr:'u5', status:'驗收',    plan:100,real:98, budget:3200000, contract:3100000, startDate:'2024-10-01', endDate:'2025-06-30', duration:273,
-   tasks:[
-     {id:'t9', name:'舊設備拆除',  eng:'u5',progress:100,due:'2024-11-30',status:'done'},
-     {id:'t10',name:'新主機安裝',  eng:'u5',progress:100,due:'2025-02-28',status:'done'},
-     {id:'t11',name:'系統測試調校',eng:'u5',progress:100,due:'2025-06-15',status:'done'},
-     {id:'t12',name:'驗收文件整理',eng:'u5',progress:90, due:'2025-06-30',status:'doing'},
-   ],
-   files:[
-     {id:'f5',name:'竣工圖_空調系統.dwg',ext:'dwg',size:'12.3 MB',by:'李國豪',date:'2025/06/18',url:'#'},
-     {id:'f6',name:'測試報告書.pdf',    ext:'pdf',size:'4.1 MB', by:'李國豪',date:'2025/06/20',url:'#'},
-   ],
-   subcontractors:[],pendingLogs:[]},
-
-  {id:4, name:'信義區辦公大樓外牆修繕',   mgr:'u5', status:'工程發包',plan:0,  real:0,  budget:850000,  contract:720000,  startDate:'',          endDate:'2025-11-30', duration:0,
-   tasks:[
-     {id:'t13',name:'外牆現況調查',eng:'u5',progress:100,due:'2025-05-31',status:'done'},
-     {id:'t14',name:'廠商詢比價',  eng:'u5',progress:60, due:'2025-07-15',status:'doing'},
-   ],
-   files:[{id:'f7',name:'外牆調查報告.pdf',ext:'pdf',size:'5.6 MB',by:'李國豪',date:'2025/05/28',url:'#'}],
-   subcontractors:[],pendingLogs:[]},
-
-  {id:5, name:'內湖廠房屋頂防水工程',     mgr:'u6', status:'規劃設計',plan:0,  real:0,  budget:0,       contract:0,       startDate:'',          endDate:'2026-03-31', duration:0,
-   tasks:[{id:'t15',name:'現場勘查',eng:'u6',progress:30,due:'2025-07-10',status:'doing'}],
-   files:[],subcontractors:[],pendingLogs:[]},
-];
+const ME = _cu ? _cu.id : '';
 
 const SCLS  = {規劃設計:'b-plan',工程發包:'b-bid',施工:'b-work',驗收:'b-chk'};
 const TCOL  = {done:'#0F6E56',doing:'#185FA5',todo:'#A0AEC0'};
 const TLBL  = {done:'已完成',doing:'進行中',todo:'待辦'};
 const EXT_ICO = {pdf:'ti-file-type-pdf',dwg:'ti-vector-triangle',dxf:'ti-vector-triangle',doc:'ti-file-type-doc',docx:'ti-file-type-doc',xls:'ti-file-spreadsheet',xlsx:'ti-file-spreadsheet',jpg:'ti-photo',jpeg:'ti-photo',png:'ti-photo',gif:'ti-photo'};
 const EXT_CLS = {pdf:'ico-pdf',dwg:'ico-dwg',dxf:'ico-dwg',doc:'ico-doc',docx:'ico-doc',xls:'ico-xls',xlsx:'ico-xls',jpg:'ico-img',jpeg:'ico-img',png:'ico-img',gif:'ico-img'};
+const AV_COLORS = ['av-a','av-b','av-c','av-d','av-e'];
 
 const fmt    = n => n ? '$'+Number(n).toLocaleString() : '—';
-const remain = p => p.budget && p.contract ? p.budget - p.contract : null;
-const diff   = p => p.real - p.plan;
+const remain = p => (p.budget && p.contract) ? p.budget - p.contract : null;
+const diff   = p => (p.realPct||0) - (p.planPct||0);
 const diffStr= d => d===0?'—':(d>0?'+':'')+d+'%';
 const diffCls= d => d>0?'diff-pos':d<0?'diff-neg':'diff-zero';
-const noWork = p => ['規劃設計','工程発包'].includes(p.status);
+const noWork = p => ['規劃設計','工程發包'].includes(p.status);
 const progCol= (r,pl)=>{const d=r-pl;return d<-10?'var(--red)':d<0?'var(--amber)':'var(--blue)'};
-const taskAvg= t => t.length ? Math.round(t.reduce((a,x)=>a+x.progress,0)/t.length) : 0;
+const taskAvg= t => t.length ? Math.round(t.reduce((a,x)=>a+(x.progress||0),0)/t.length) : 0;
 const isOver = t => t.status!=='done' && t.due && new Date(t.due)<new Date();
-const isOwn  = p => p.mgr === ME;
+const isOwn  = p => p.mgrId === ME;
 const fmtSz  = b => b<1024?b+' B':b<1048576?Math.round(b/1024)+' KB':(b/1048576).toFixed(1)+' MB';
+const avCls  = id => { const i=parseInt((id||'').replace(/\D/g,''))||0; return AV_COLORS[i%5]; };
+const engName= id => (ENG[id]||{}).name || id || '—';
 
 let filterStatus='全部', filterMgr='', activeTab={}, uploading={}, activeProjId=null, curPage='list';
+
+// ── 初始載入 ──
+async function init() {
+  try {
+    const [pr, ur] = await Promise.all([API.getProjects(), API.getUsers()]);
+    PROJECTS  = pr.success ? pr.projects : [];
+    ALL_USERS = ur.success ? ur.users    : [];
+    ENG = {};
+    ALL_USERS.forEach(u => {
+      ENG[u.id] = { name: u.name, role: u.role, cls: avCls(u.id) };
+    });
+    goPage('list');
+  } catch(e) {
+    showToast('載入失敗，請重新整理', 'error');
+  }
+}
 
 /* ══ 導覽 ══ */
 function goPage(id, projId) {
@@ -443,7 +420,6 @@ function goPage(id, projId) {
     const b = document.getElementById('nl-'+k);
     if(b) b.classList.toggle('active', k===id);
   });
-  // breadcrumb
   const bc = document.getElementById('breadcrumb');
   if (id==='detail' && activeProjId) {
     const p = PROJECTS.find(x=>x.id===activeProjId);
@@ -455,29 +431,29 @@ function goPage(id, projId) {
   }
   if (id==='list')   { renderStats(); renderAlerts(); renderFilters(); renderTable(); }
   if (id==='myproj') renderMyProj();
-  if (id==='review') renderReview();
+  if (id==='review') loadReview();
   window.scrollTo(0,0);
 }
 
 /* ══ 主列表 ══ */
 function renderStats() {
-  const pending = PROJECTS.filter(isOwn).flatMap(p=>p.pendingLogs).filter(l=>l.status==='pending').length;
   const myCount = PROJECTS.filter(isOwn).length;
-  const totB    = PROJECTS.reduce((a,p)=>a+p.budget,0);
-  const totR    = PROJECTS.reduce((a,p)=>a+(remain(p)||0),0);
+  const pendingLogs = PROJECTS.filter(isOwn).reduce((a,p)=>a+(p._pendingLogs||0),0);
+  const totB = PROJECTS.reduce((a,p)=>a+Number(p.budget||0),0);
+  const totR = PROJECTS.reduce((a,p)=>a+(remain(p)||0),0);
   document.getElementById('list-sub').textContent =
     new Date().toLocaleDateString('zh-TW',{year:'numeric',month:'long',day:'numeric'}) + ' · 工程師視角';
   document.getElementById('stats').innerHTML = `
     <div class="stat-card"><div class="stat-val">${PROJECTS.length}</div><div class="stat-lbl">全部專案</div><div class="stat-sub">我負責 ${myCount} 個</div></div>
     <div class="stat-card"><div class="stat-val">${PROJECTS.filter(p=>p.status==='施工').length}</div><div class="stat-lbl">施工中</div><div class="stat-sub">${PROJECTS.filter(p=>p.status==='規劃設計').length} 個規劃中</div></div>
     <div class="stat-card"><div class="stat-val" style="font-size:20px">${totB?'$'+Math.round(totB/10000)+'萬':'—'}</div><div class="stat-lbl">預算總額</div><div class="stat-sub">所有專案合計</div></div>
-    <div class="stat-card"><div class="stat-val" style="font-size:20px;color:${totR<0?'var(--red)':'inherit'}">${totB?'$'+Math.round(totR/10000)+'萬':'—'}</div><div class="stat-lbl">剩餘預算</div><div class="stat-sub" style="color:${pending>0?'var(--amber)':'var(--text4)'}">${pending>0?pending+' 筆日誌待審核':'日誌全數已審'}</div></div>`;
+    <div class="stat-card"><div class="stat-val" style="color:${pendingLogs>0?'var(--amber)':'inherit'}">${pendingLogs}</div><div class="stat-lbl">待審核日誌</div><div class="stat-sub">${pendingLogs>0?'需要審核':''}</div></div>`;
 }
 
 function renderAlerts() {
-  const pending = PROJECTS.filter(isOwn).flatMap(p=>p.pendingLogs).filter(l=>l.status==='pending').length;
-  document.getElementById('alert-area').innerHTML = pending>0
-    ? `<div class="alert alert-warn"><i class="ti ti-bell" style="font-size:16px;flex-shrink:0"></i><span>有 <strong>${pending}</strong> 筆分包商施工日誌待你審核。<button class="btn sm" style="margin-left:8px" onclick="goPage('review')">前往審核 →</button></span></div>`
+  const pendingLogs = PROJECTS.filter(isOwn).reduce((a,p)=>a+(p._pendingLogs||0),0);
+  document.getElementById('alert-area').innerHTML = pendingLogs>0
+    ? `<div class="alert alert-warn"><i class="ti ti-bell" style="font-size:16px;flex-shrink:0"></i><span>有 <strong>${pendingLogs}</strong> 筆分包商施工日誌待你審核。<button class="btn sm" style="margin-left:8px" onclick="goPage('review')">前往審核 →</button></span></div>`
     : '';
 }
 
@@ -491,7 +467,6 @@ function renderFilters() {
     `<span class="filter-label">狀態</span>`+
     sts.map(s=>`<button class="chip${filterStatus===s?' active':''}" onclick="setSts('${s}')">${s}</button>`).join('')+
     `<div class="filter-sep"></div><span class="filter-label">負責人</span>`+mgrChips;
-
   const mb = document.getElementById('mgr-bar');
   if (filterMgr && ENG[filterMgr]) {
     const e = ENG[filterMgr]; mb.classList.add('show');
@@ -499,9 +474,8 @@ function renderFilters() {
     av.textContent = e.name[0]; av.className = 'av '+e.cls;
     av.style.cssText = 'width:24px;height:24px;font-size:11px';
     document.getElementById('mgr-bar-lbl').textContent =
-      `篩選中：${e.name} 負責的專案（共 ${PROJECTS.filter(p=>p.mgr===filterMgr).length} 個）`;
+      `篩選中：${e.name} 負責的專案（共 ${PROJECTS.filter(p=>p.mgrId===filterMgr).length} 個）`;
   } else { mb.classList.remove('show'); }
-
   document.getElementById('legend').innerHTML = `
     <div class="legend-item"><div style="width:3px;height:16px;background:var(--teal);border-radius:2px"></div><span>我負責（可編輯）</span></div>
     <div class="legend-item"><div style="width:3px;height:16px;background:var(--border);border-radius:2px"></div><span>他人負責（唯讀）</span></div>`;
@@ -515,7 +489,7 @@ function clickMgr(id, ev) { ev.stopPropagation(); setMgr(id); }
 function renderTable() {
   let list = PROJECTS;
   if (filterStatus!=='全部') list = list.filter(p=>p.status===filterStatus);
-  if (filterMgr) list = list.filter(p=>p.mgr===filterMgr);
+  if (filterMgr) list = list.filter(p=>p.mgrId===filterMgr);
   const tbody = document.getElementById('proj-tbody');
   if (!list.length) {
     tbody.innerHTML = `<tr><td colspan="11" class="empty"><i class="ti ti-folder-off"></i>無符合條件的專案</td></tr>`;
@@ -523,41 +497,40 @@ function renderTable() {
   }
   tbody.innerHTML = list.map(p => {
     const own = isOwn(p);
-    const e   = ENG[p.mgr];
+    const e   = ENG[p.mgrId] || {};
     const d   = diff(p);
     const rem = remain(p);
-    const nw  = ['規劃設計','工程発包'].includes(p.status);
-    return `<tr class="proj-row row-${own?'mine':'other'}" onclick="goPage('detail',${p.id})">
-      <td style="color:var(--text4);font-size:12px;font-weight:600">${p.id}</td>
+    const nw  = noWork(p);
+    return `<tr class="proj-row row-${own?'mine':'other'}" onclick="goPage('detail','${p.id}')">
+      <td style="color:var(--text4);font-size:12px;font-weight:600">${p.id.slice(-4)}</td>
       <td>
         <div class="name-cell">
           <i class="ti ti-chevron-right" style="font-size:12px;color:var(--text4);flex-shrink:0"></i>
           <span class="name-text">${p.name}</span>
           ${own ? `<span class="mine-tag"><i class="ti ti-user" style="font-size:9px"></i> 我的</span>`
                 : `<span class="readonly-tag"><i class="ti ti-eye" style="font-size:9px"></i> 唯讀</span>`}
-          ${p.files&&p.files.length ? `<span class="attach-pill"><i class="ti ti-paperclip" style="font-size:10px"></i>${p.files.length}</span>` : ''}
         </div>
       </td>
       <td>
-        <div class="mgr-chip${filterMgr===p.mgr?' hl':''}" onclick="clickMgr('${p.mgr}',event)">
-          <div class="av ${e?e.cls:''}" style="width:22px;height:22px;font-size:9px">${e?e.name[0]:''}</div>
-          <span style="font-size:12px;font-weight:500">${e?e.name.slice(0,3)+'君':''}</span>
+        <div class="mgr-chip${filterMgr===p.mgrId?' hl':''}" onclick="clickMgr('${p.mgrId}',event)">
+          <div class="av ${e.cls||'av-a'}" style="width:22px;height:22px;font-size:9px">${(e.name||'?')[0]}</div>
+          <span style="font-size:12px;font-weight:500">${(e.name||'').slice(0,3)}</span>
         </div>
       </td>
       <td><span class="badge ${SCLS[p.status]||'b-plan'}">${p.status}</span></td>
       <td>${nw ? `<span style="color:var(--text4);font-size:12px">—</span>` :
-        `<div class="prog-cell"><div class="prog-track"><div class="prog-fill" style="width:${p.plan}%;background:var(--text4)"></div></div><span class="prog-num">${p.plan}%</span></div>`}</td>
+        `<div class="prog-cell"><div class="prog-track"><div class="prog-fill" style="width:${p.planPct}%;background:var(--text4)"></div></div><span class="prog-num">${p.planPct}%</span></div>`}</td>
       <td>${nw ? `<span style="color:var(--text4);font-size:12px">—</span>` :
-        `<div class="prog-cell"><div class="prog-track"><div class="prog-fill" style="width:${p.real}%;background:${progCol(p.real,p.plan)}"></div></div><span class="prog-num">${p.real}%</span></div>`}</td>
+        `<div class="prog-cell"><div class="prog-track"><div class="prog-fill" style="width:${p.realPct}%;background:${progCol(p.realPct,p.planPct)}"></div></div><span class="prog-num">${p.realPct}%</span></div>`}</td>
       <td class="r"><span class="${diffCls(d)}">${nw?'—':diffStr(d)}</span></td>
       <td class="r" style="font-size:12px;font-weight:600">${p.budget?fmt(p.budget):'—'}</td>
       <td class="r" style="font-size:12px;color:${rem!==null&&rem<0?'var(--red)':'inherit'}">${rem!==null?fmt(rem):'—'}</td>
       <td style="font-size:12px">${p.endDate||'—'}</td>
       <td>
         <div style="display:flex;gap:5px">
-          <button class="btn sm" onclick="event.stopPropagation();goPage('detail',${p.id})"><i class="ti ti-eye"></i></button>
+          <button class="btn sm" onclick="event.stopPropagation();goPage('detail','${p.id}')"><i class="ti ti-eye"></i></button>
           ${own
-            ? `<button class="btn sm pri" onclick="event.stopPropagation();toast('編輯：${p.name}')"><i class="ti ti-edit"></i> 編輯</button>`
+            ? `<button class="btn sm pri" onclick="event.stopPropagation();openEditProjModal('${p.id}')"><i class="ti ti-edit"></i> 編輯</button>`
             : `<button class="btn sm readonly" title="非你負責的專案"><i class="ti ti-lock"></i> 唯讀</button>`}
         </div>
       </td>
@@ -565,21 +538,27 @@ function renderTable() {
   }).join('');
 }
 
-/* ══ 詳情頁 ══ */
-function renderDetailPage(id) {
-  const p   = PROJECTS.find(x=>x.id===id); if(!p) return;
+/* ══ 專案詳情 ══ */
+async function renderDetailPage(id) {
+  const p = PROJECTS.find(x=>x.id===id); if(!p) return;
   const own = isOwn(p);
-  const e   = ENG[p.mgr];
-  const avg = taskAvg(p.tasks);
+  const e   = ENG[p.mgrId] || {};
   const rem = remain(p);
-  const d   = diff(p);
   const dur = p.duration || (p.startDate&&p.endDate ? Math.round((new Date(p.endDate)-new Date(p.startDate))/864e5) : null);
-  const nw  = ['規劃設計','工程発包'].includes(p.status);
-  const done = p.tasks.filter(t=>t.status==='done').length;
-  const doing= p.tasks.filter(t=>t.status==='doing').length;
+  const nw  = noWork(p);
   const tab = activeTab[id] || 'tasks';
 
-  // Hero
+  // 載入工項（如果尚未快取）
+  if (!TASKS_CACHE[id]) {
+    const tr = await API.getTasks(id);
+    TASKS_CACHE[id] = tr.success ? tr.tasks : [];
+  }
+  const tasks = TASKS_CACHE[id];
+  const done  = tasks.filter(t=>t.status==='done').length;
+  const doing = tasks.filter(t=>t.status==='doing').length;
+  const avg   = taskAvg(tasks);
+  const d     = diff(p);
+
   document.getElementById('detail-hero-wrap').innerHTML = `
     <div class="detail-hero">
       <div class="detail-hero-top">
@@ -587,7 +566,7 @@ function renderDetailPage(id) {
           <div class="detail-name">${p.name}</div>
           <div class="detail-meta">
             <span class="badge ${SCLS[p.status]||'b-plan'}" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.2)">${p.status}</span>
-            ${e ? `<div class="av ${e.cls}" style="width:20px;height:20px;font-size:9px">${e.name[0]}</div><span style="font-size:13px;color:rgba(255,255,255,.7)">${e.name} · ${e.role}</span>` : ''}
+            ${e.name ? `<div class="av ${e.cls}" style="width:20px;height:20px;font-size:9px">${e.name[0]}</div><span style="font-size:13px;color:rgba(255,255,255,.7)">${e.name}</span>` : ''}
             ${own ? `<span style="font-size:11px;background:rgba(15,110,86,.3);color:#9FE1CB;border:1px solid rgba(15,110,86,.4);border-radius:20px;padding:2px 8px">我負責</span>`
                   : `<span style="font-size:11px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:2px 8px"><i class="ti ti-eye" style="font-size:10px"></i> 唯讀</span>`}
           </div>
@@ -595,8 +574,8 @@ function renderDetailPage(id) {
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn ghost" onclick="goPage('list')"><i class="ti ti-arrow-left"></i> 返回</button>
           ${own ? `
-            <button class="btn ghost" onclick="toast('編輯專案基本資料')"><i class="ti ti-edit"></i> 編輯</button>
-            <button class="btn ghost" style="background:rgba(255,255,255,.12)" onclick="openAssignModal(${p.id})"><i class="ti ti-link"></i> 指派分包商</button>` : ''}
+            <button class="btn ghost" onclick="openEditProjModal('${p.id}')"><i class="ti ti-edit"></i> 編輯</button>
+            <button class="btn ghost" style="background:rgba(255,255,255,.12)" onclick="openAssignModal('${p.id}')"><i class="ti ti-link"></i> 指派分包商</button>` : ''}
         </div>
       </div>
       <div class="date-strip">
@@ -604,135 +583,139 @@ function renderDetailPage(id) {
         <div class="ds"><div class="ds-lbl"><i class="ti ti-calendar-check" style="font-size:11px"></i> 預定完工日</div><div class="ds-val">${p.endDate||'—'}</div></div>
         <div class="ds"><div class="ds-lbl"><i class="ti ti-clock" style="font-size:11px"></i> 工期</div><div class="ds-val">${dur?dur+' 天':'—'}</div></div>
       </div>
-      ${!own ? `<div class="readonly-hero-banner"><i class="ti ti-lock" style="font-size:14px;flex-shrink:0"></i><span>你正在檢視 <strong>${e?e.name:''}</strong> 負責的專案，此頁為唯讀模式，所有編輯操作已停用。</span></div>` : ''}
+      ${!own ? `<div class="readonly-hero-banner"><i class="ti ti-lock" style="font-size:14px;flex-shrink:0"></i><span>你正在檢視 <strong>${e.name||''}</strong> 負責的專案，此頁為唯讀模式。</span></div>` : ''}
     </div>`;
 
-  // 指標
   document.getElementById('detail-metrics').innerHTML = `
     <div class="metric"><div class="metric-lbl">工項進度</div><div class="metric-val">${avg}%</div></div>
-    <div class="metric"><div class="metric-lbl">完成 / 進行 / 待辦</div><div class="metric-val" style="font-size:18px">${done}<span style="color:var(--text4);font-size:14px"> / ${doing} / ${p.tasks.length-done-doing}</span></div></div>
+    <div class="metric"><div class="metric-lbl">完成 / 進行 / 待辦</div><div class="metric-val" style="font-size:18px">${done}<span style="color:var(--text4);font-size:14px"> / ${doing} / ${tasks.length-done-doing}</span></div></div>
     <div class="metric"><div class="metric-lbl">預算金額</div><div class="metric-val" style="font-size:18px">${p.budget?fmt(p.budget):'—'}</div></div>
     <div class="metric"><div class="metric-lbl">剩餘預算</div><div class="metric-val" style="font-size:18px;color:${rem!==null&&rem<0?'var(--red)':'inherit'}">${rem!==null?fmt(rem):'—'}</div></div>`;
 
-  // 進度條
   document.getElementById('detail-prog-bar').innerHTML = !nw ? `
     <div class="big-bar-wrap">
-      <div class="big-bar-lbl"><span>實際進度 ${p.real}%</span><span>預計進度 ${p.plan}%</span></div>
-      <div class="big-bar"><div class="big-fill" style="width:${p.real}%;background:${progCol(p.real,p.plan)}"></div></div>
+      <div class="big-bar-lbl"><span>實際進度 ${p.realPct}%</span><span>預計進度 ${p.planPct}%</span></div>
+      <div class="big-bar"><div class="big-fill" style="width:${p.realPct}%;background:${progCol(p.realPct,p.planPct)}"></div></div>
     </div>` : '';
 
-  // 頁籤
   const tabs = [
     {k:'tasks', l:'工項任務',   i:'ti-checklist'},
-    {k:'files', l:`契約文件 (${p.files.length})`, i:'ti-files'},
+    {k:'files', l:'契約文件',   i:'ti-files'},
     {k:'budget',l:'預算資訊',   i:'ti-report-money'},
-    {k:'engineer',l:'負責工程師',i:'ti-user'},
   ];
   document.getElementById('detail-tabs').innerHTML =
-    tabs.map(t=>`<button class="tab${tab===t.k?' active':''}" onclick="switchTab(${id},'${t.k}')"><i class="ti ${t.i}"></i>${t.l}</button>`).join('');
+    tabs.map(t=>`<button class="tab${tab===t.k?' active':''}" onclick="switchTab('${id}','${t.k}')"><i class="ti ${t.i}"></i>${t.l}</button>`).join('');
 
-  // 頁籤內容
+  await renderDetailContent(id, tab, tasks, own, p);
+}
+
+async function renderDetailContent(id, tab, tasks, own, p) {
   let html = '';
   if (tab==='tasks') {
-    const taskRows = p.tasks.map(t => `
+    const taskRows = tasks.map(t=>`
       <div class="task-item">
         <div class="task-dot" style="background:${TCOL[t.status]}" title="${TLBL[t.status]}"></div>
         <div class="task-name">${t.name}</div>
         <div class="task-mini-bar"><div class="task-mini-fill" style="width:${t.progress}%"></div></div>
         <span class="task-pct">${t.progress}%</span>
         <span class="badge ${t.status==='done'?'b-chk':t.status==='doing'?'b-work':'b-plan'}" style="font-size:10px">${TLBL[t.status]}</span>
-        <span class="task-due" style="color:${isOver(t)?'var(--red)':'var(--text4)'}"><i class="ti ti-calendar-due" style="font-size:11px"></i> ${t.due.slice(5)}</span>
-        ${own ? `<button class="btn sm" onclick="toast('編輯工項')"><i class="ti ti-edit"></i></button>` : ''}
+        <span class="task-due" style="color:${isOver(t)?'var(--red)':'var(--text4)'}"><i class="ti ti-calendar-due" style="font-size:11px"></i> ${(t.due||'').slice(5)||'—'}</span>
+        ${own ? `<button class="btn sm" onclick="openEditTaskModal('${id}','${t.id}')"><i class="ti ti-edit"></i></button>` : ''}
       </div>`).join('');
     html = `<div class="section-card">
       <div class="section-hd">
-        <span class="section-title">工項清單（${p.tasks.length} 項）</span>
-        ${own ? `<button class="btn sm pri" onclick="toast('新增工項')"><i class="ti ti-plus"></i> 新增工項</button>` : ''}
+        <span class="section-title">工項清單（${tasks.length} 項）</span>
+        ${own ? `<button class="btn sm pri" onclick="openAddTaskModal('${id}')"><i class="ti ti-plus"></i> 新增工項</button>` : ''}
       </div>
       ${taskRows || `<div class="empty"><i class="ti ti-checklist"></i>尚無工項資料</div>`}
     </div>
-    ${own ? `<div class="section-card">
-      <div class="section-hd">
-        <span class="section-title">分包商指派</span>
-        <button class="btn sm pri" onclick="openAssignModal(${p.id})"><i class="ti ti-plus"></i> 新增指派</button>
-      </div>
-      ${p.subcontractors.length ? p.subcontractors.map(s=>`
-        <div class="sub-chip">
-          <div style="width:8px;height:8px;border-radius:50%;background:var(--amber);flex-shrink:0"></div>
-          <div style="flex:1"><div style="font-size:13px;font-weight:600">${s.name}</div><div style="font-size:11px;color:var(--text4)">指派 ${s.tasks.length} 個工項</div></div>
-          <button class="btn sm" onclick="toast('連結已複製')"><i class="ti ti-copy"></i> 複製連結</button>
-          <button class="btn sm danger" onclick="toast('移除指派')"><i class="ti ti-trash"></i></button>
-        </div>`).join('') : `<div class="empty" style="padding:1.5rem"><i class="ti ti-users-group"></i>尚未指派分包商</div>`}
-    </div>` : ''}`;
+    ${own ? await buildAssignSection(id) : ''}`;
 
   } else if (tab==='files') {
-    const rows = p.files.map(f=>`
-      <div class="file-item">
-        <div class="file-ico ${EXT_CLS[f.ext]||'ico-other'}"><i class="ti ${EXT_ICO[f.ext]||'ti-file'}"></i></div>
-        <div class="file-info">
-          <div class="file-name">${f.name}</div>
-          <div class="file-meta">${f.ext.toUpperCase()} · ${f.size} · 上傳者：${f.by} · ${f.date}</div>
-        </div>
-        <div style="display:flex;gap:6px;flex-shrink:0">
-          <a class="btn sm" href="${f.url}" target="_blank"><i class="ti ti-download"></i> 下載</a>
-          ${own ? `<button class="btn sm danger" onclick="deleteFile(${id},'${f.id}')"><i class="ti ti-trash"></i></button>` : ''}
-        </div>
-      </div>`).join('');
+    if (!FILES_CACHE[id]) {
+      const fr = await API.getFiles(id);
+      FILES_CACHE[id] = fr.success ? fr.files : [];
+    }
+    const files = FILES_CACHE[id];
     html = `<div class="section-card">
       <div class="section-hd">
         <span class="section-title">契約文件與圖說</span>
-        ${own ? `<button class="btn sm pri" onclick="triggerUpload(${id})"><i class="ti ti-upload"></i> 上傳文件</button>` : ''}
+        ${own ? `<button class="btn sm pri" onclick="triggerUpload('${id}')"><i class="ti ti-upload"></i> 上傳文件</button>` : ''}
       </div>
-      ${uploading[id] ? `<div class="upload-prog"><div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:500"><span style="display:flex;align-items:center;gap:6px;color:var(--blue)"><i class="ti ti-loader"></i>正在上傳...</span><span style="color:var(--text3)">${uploading[id]}%</span></div><div class="up-track"><div class="up-fill" style="width:${uploading[id]}%"></div></div></div>` : ''}
-      ${rows || `<div class="empty"><i class="ti ti-file-off"></i>尚無文件</div>`}
-      ${own ? `<div class="drop-zone" id="drop-${id}" ondragover="onDrag(event,${id},true)" ondragleave="onDrag(event,${id},false)" ondrop="onDrop(event,${id})" onclick="triggerUpload(${id})">
+      ${uploading[id] ? `<div style="background:var(--bg);border-radius:var(--r-sm);padding:10px 14px;margin-bottom:10px;border:1px solid var(--border-l)">
+        <div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:500;color:var(--blue);margin-bottom:6px"><span><i class="ti ti-loader" style="animation:spin 1s linear infinite"></i> 正在上傳...</span><span>${uploading[id]}%</span></div>
+        <div style="height:4px;background:var(--border);border-radius:4px;overflow:hidden"><div style="height:100%;width:${uploading[id]}%;background:var(--blue);transition:width .2s"></div></div>
+      </div>` : ''}
+      ${files.map(f=>`<div class="file-item">
+        <div class="file-ico ${EXT_CLS[f.ext]||'ico-other'}"><i class="ti ${EXT_ICO[f.ext]||'ti-file'}"></i></div>
+        <div class="file-info"><div class="file-name">${f.name}</div><div class="file-meta">${(f.ext||'').toUpperCase()} · ${f.size||'—'} · 上傳者：${engName(f.uploaderId)} · ${f.uploadedAt||''}</div></div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <a class="btn sm" href="${f.driveUrl||'#'}" target="_blank"><i class="ti ti-download"></i> 下載</a>
+          ${own ? `<button class="btn sm danger" onclick="doDeleteFile('${id}','${f.id}')"><i class="ti ti-trash"></i></button>` : ''}
+        </div>
+      </div>`).join('')||`<div class="empty"><i class="ti ti-file-off"></i>尚無文件</div>`}
+      ${own ? `<div class="drop-zone" id="drop-${id}" ondragover="onDrag(event,'${id}',true)" ondragleave="onDrag(event,'${id}',false)" ondrop="onDrop(event,'${id}')" onclick="triggerUpload('${id}')">
         <i class="ti ti-cloud-upload" style="font-size:28px;color:var(--text4);display:block;margin-bottom:10px"></i>
-        <div style="font-size:14px;font-weight:600;color:var(--text2);margin-bottom:5px">拖曳檔案至此，或點擊選擇上傳</div>
-        <div style="font-size:12px;color:var(--text4)">支援：PDF · DWG / DXF · Word · Excel · JPG / PNG · 單檔最大 50MB</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text2);margin-bottom:5px">拖曳或點擊上傳</div>
+        <div style="font-size:12px;color:var(--text4)">PDF · DWG · Word · Excel · JPG / PNG</div>
       </div>` : `<div style="text-align:center;padding:1.5rem;color:var(--text4);font-size:13px;border-top:1px solid var(--border-l);margin-top:12px"><i class="ti ti-lock" style="font-size:20px;display:block;margin-bottom:6px"></i>非你負責的專案，無法上傳文件</div>`}
     </div>`;
 
   } else if (tab==='budget') {
     html = remain(p)!==null ? `<div class="section-card">
-      <div class="section-hd"><span class="section-title">預算資訊</span></div>
+      <div class="section-hd"><span class="section-title">預算資訊</span>${own?`<button class="btn sm" onclick="openEditProjModal('${id}')"><i class="ti ti-edit"></i> 編輯</button>`:''}</div>
       <div class="budget-grid">
         <div class="budget-item"><div class="budget-lbl">預算金額</div><div class="budget-val">${fmt(p.budget)}</div></div>
         <div class="budget-item"><div class="budget-lbl">契約金額</div><div class="budget-val">${fmt(p.contract)}</div></div>
         <div class="budget-item"><div class="budget-lbl">剩餘預算</div><div class="budget-val" style="color:${remain(p)<0?'var(--red)':'var(--green)'}">${fmt(remain(p))}</div></div>
-      </div>
-      <div style="margin-top:16px">
-        <div class="big-bar-lbl"><span>契約 / 預算比</span><span>${Math.round(p.contract/p.budget*100)}%</span></div>
-        <div class="big-bar"><div class="big-fill" style="width:${Math.round(p.contract/p.budget*100)}%;background:var(--blue)"></div></div>
-      </div>
-    </div>` : `<div class="section-card"><div class="empty"><i class="ti ti-report-money"></i>尚未填入預算資料</div></div>`;
-
-  } else if (tab==='engineer') {
-    const others = PROJECTS.filter(x=>x.mgr===p.mgr&&x.id!==p.id);
-    html = `<div class="section-card">
-      <div class="section-hd"><span class="section-title">負責工程師</span></div>
-      <div class="eng-hero">
-        <div class="av ${e?e.cls:''}" style="width:44px;height:44px;font-size:18px">${e?e.name[0]:''}</div>
-        <div style="flex:1"><div style="font-size:16px;font-weight:700;margin-bottom:3px">${e?e.name:'—'}</div><div style="font-size:13px;color:var(--text3)">${e?e.role:''}</div></div>
-        <button class="btn sm" onclick="setMgr('${p.mgr}');goPage('list')"><i class="ti ti-filter"></i> 查看所有專案</button>
-      </div>
-      ${others.length ? `<div style="margin-top:16px">
-        <div class="section-hd" style="margin-bottom:8px"><span class="section-title">其他負責專案（${others.length} 個）</span></div>
-        ${others.map(x=>`<div class="other-proj-row" onclick="goPage('detail',${x.id})">
-          <div class="other-proj-name"><i class="ti ti-chevron-right" style="font-size:12px;color:var(--text4)"></i>${x.name}</div>
-          <span class="badge ${SCLS[x.status]||'b-plan'}">${x.status}</span>
-        </div>`).join('')}
-      </div>` : ''}
-    </div>`;
+      </div></div>`
+    : `<div class="section-card"><div class="empty"><i class="ti ti-report-money"></i>尚未填入預算資料</div></div>`;
   }
   document.getElementById('detail-content').innerHTML = html;
+}
+
+async function buildAssignSection(projId) {
+  if (!ASSIGNS_CACHE[projId]) {
+    const ar = await API.getAssigns(projId);
+    ASSIGNS_CACHE[projId] = ar.success ? ar.assigns : [];
+  }
+  const assigns = ASSIGNS_CACHE[projId];
+  return `<div class="section-card">
+    <div class="section-hd">
+      <span class="section-title">分包商指派</span>
+      <button class="btn sm pri" onclick="openAssignModal('${projId}')"><i class="ti ti-plus"></i> 新增指派</button>
+    </div>
+    ${assigns.length ? assigns.map(a=>`
+      <div class="sub-chip">
+        <div style="width:8px;height:8px;border-radius:50%;background:var(--amber);flex-shrink:0"></div>
+        <div style="flex:1"><div style="font-size:13px;font-weight:600">${engName(a.subId)}</div><div style="font-size:11px;color:var(--text4)">指派 ${(a.taskIds||[]).length} 個工項 · 截止 ${a.dueDate||'—'}</div></div>
+        <button class="btn sm" onclick="copyFillLink('${a.token}')"><i class="ti ti-copy"></i> 複製連結</button>
+        <button class="btn sm danger" onclick="doDeleteAssign('${projId}','${a.id}')"><i class="ti ti-trash"></i></button>
+      </div>`).join('')
+    : `<div class="empty" style="padding:1.5rem"><i class="ti ti-users-group"></i>尚未指派分包商</div>`}
+  </div>`;
+}
+
+function copyFillLink(token) {
+  const url = `${window.location.origin}${window.location.pathname.replace('engineer.html','subcontractor.html')}?token=${token}`;
+  navigator.clipboard.writeText(url).then(()=>showToast('連結已複製','success'));
+}
+
+async function doDeleteAssign(projId, id) {
+  if (!confirm('確定移除此指派？')) return;
+  const res = await API.deleteAssign(id);
+  if (res.success) { delete ASSIGNS_CACHE[projId]; showToast('指派已移除','success'); renderDetailPage(projId); }
+  else showToast(res.error||'移除失敗','error');
 }
 
 function switchTab(id, tab) { activeTab[id]=tab; renderDetailPage(id); }
 
 /* ══ 我的專案 ══ */
-function renderMyProj() {
+async function renderMyProj() {
   const mine = PROJECTS.filter(isOwn);
-  document.getElementById('myproj-content').innerHTML = mine.map(p=>`
+  const el = document.getElementById('myproj-content');
+  if (!mine.length) { el.innerHTML=`<div class="section-card"><div class="empty"><i class="ti ti-folder-off"></i>你目前沒有負責的專案</div></div>`; return; }
+  el.innerHTML = mine.map(p=>`
     <div class="section-card">
       <div class="section-hd">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -740,59 +723,59 @@ function renderMyProj() {
           <span class="badge ${SCLS[p.status]||'b-plan'}">${p.status}</span>
         </div>
         <div style="display:flex;gap:6px">
-          <button class="btn sm" onclick="goPage('detail',${p.id})"><i class="ti ti-eye"></i> 詳情</button>
-          <button class="btn sm" onclick="toast('編輯專案')"><i class="ti ti-edit"></i> 編輯</button>
-          <button class="btn sm pri" onclick="openAssignModal(${p.id})"><i class="ti ti-link"></i> 指派分包商</button>
+          <button class="btn sm" onclick="goPage('detail','${p.id}')"><i class="ti ti-eye"></i> 詳情</button>
+          <button class="btn sm" onclick="openEditProjModal('${p.id}')"><i class="ti ti-edit"></i> 編輯</button>
+          <button class="btn sm pri" onclick="openAssignModal('${p.id}')"><i class="ti ti-link"></i> 指派分包商</button>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
-        <div class="budget-item"><div class="budget-lbl">工項進度</div><div class="budget-val">${taskAvg(p.tasks)}%</div></div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px">
+        <div class="budget-item"><div class="budget-lbl">工項進度</div><div class="budget-val">${p.realPct||0}%</div></div>
         <div class="budget-item"><div class="budget-lbl">預算金額</div><div class="budget-val" style="font-size:16px">${p.budget?fmt(p.budget):'—'}</div></div>
         <div class="budget-item"><div class="budget-lbl">剩餘預算</div><div class="budget-val" style="font-size:16px;color:${remain(p)!==null&&remain(p)<0?'var(--red)':'inherit'}">${remain(p)!==null?fmt(remain(p)):'—'}</div></div>
         <div class="budget-item"><div class="budget-lbl">預定完工</div><div class="budget-val" style="font-size:15px">${p.endDate||'—'}</div></div>
       </div>
-      ${p.tasks.map(t=>`
-        <div class="task-item">
-          <div class="task-dot" style="background:${TCOL[t.status]}"></div>
-          <div class="task-name">${t.name}</div>
-          <div class="task-mini-bar"><div class="task-mini-fill" style="width:${t.progress}%"></div></div>
-          <span class="task-pct">${t.progress}%</span>
-          <span class="task-due" style="color:${isOver(t)?'var(--red)':'var(--text4)'}"><i class="ti ti-calendar-due" style="font-size:11px"></i> ${t.due.slice(5)}</span>
-        </div>`).join('')}
     </div>`).join('');
 }
 
 /* ══ 審核日誌 ══ */
-function renderReview() {
-  const logs = PROJECTS.filter(isOwn).flatMap(p=>p.pendingLogs.map(l=>({...l,projName:p.name})));
-  document.getElementById('review-content').innerHTML = `<div class="section-card">
-    <div class="section-hd"><span class="section-title">待審核（${logs.length}）</span></div>
-    ${logs.length ? logs.map(l=>`
-      <div class="review-item">
-        <div style="width:40px;height:40px;border-radius:var(--r-sm);background:var(--amber-l);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🏗️</div>
-        <div style="flex:1">
-          <div style="font-size:13px;font-weight:600;margin-bottom:3px">${l.sub} — ${l.projName}</div>
-          <div style="font-size:11px;color:var(--text4);margin-bottom:5px">${l.date} · ${l.weather} · 出工 ${l.workers} 人</div>
-          <div style="font-size:13px;color:var(--text2)">${l.note}</div>
-          <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
-            ${l.items.map(i=>`<span style="font-size:11px;background:var(--bg);padding:2px 8px;border-radius:20px;border:1px solid var(--border);color:var(--text3)"><i class="ti ti-hammer" style="font-size:10px"></i> ${i.name} ${i.progress}%</span>`).join('')}
+async function loadReview() {
+  const el = document.getElementById('review-content');
+  showLoading(true, 'review-content');
+  try {
+    const myProjs = PROJECTS.filter(isOwn);
+    let allLogs = [];
+    for (const p of myProjs) {
+      const lr = await API.getLogs(p.id);
+      if (lr.success) {
+        const pending = lr.logs.filter(l=>l.reviewStatus==='pending');
+        p._pendingLogs = pending.length;
+        allLogs = allLogs.concat(pending.map(l=>({...l, projName:p.name})));
+      }
+    }
+    el.innerHTML = `<div class="section-card">
+      <div class="section-hd"><span class="section-title">待審核（${allLogs.length}）</span></div>
+      ${allLogs.length ? allLogs.map(l=>`
+        <div class="review-item">
+          <div style="width:40px;height:40px;border-radius:var(--r-sm);background:var(--amber-l);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🏗️</div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:600;margin-bottom:3px">${engName(l.fillerId)} — ${l.projName}</div>
+            <div style="font-size:11px;color:var(--text4);margin-bottom:5px">${l.date} · ${l.weather||''} · 出工 ${l.workers} 人</div>
+            <div style="font-size:13px;color:var(--text2)">${l.note||''}</div>
           </div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
-          <button class="btn sm pri" onclick="approveLog('${l.id}',true)"><i class="ti ti-check"></i> 核准</button>
-          <button class="btn sm danger" onclick="approveLog('${l.id}',false)"><i class="ti ti-x"></i> 退回</button>
-        </div>
-      </div>`).join('')
-    : `<div class="empty"><i class="ti ti-check-circle"></i>目前無待審核日誌</div>`}
-  </div>`;
+          <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+            <button class="btn sm pri" onclick="doReviewLog('${l.id}',true)"><i class="ti ti-check"></i> 核准</button>
+            <button class="btn sm danger" onclick="doReviewLog('${l.id}',false)"><i class="ti ti-x"></i> 退回</button>
+          </div>
+        </div>`).join('')
+      : `<div class="empty"><i class="ti ti-check-circle"></i>目前無待審核日誌</div>`}
+    </div>`;
+  } catch(e) { el.innerHTML=`<div class="section-card"><div class="empty"><i class="ti ti-wifi-off"></i>載入失敗</div></div>`; }
 }
 
-function approveLog(id, ok) {
-  PROJECTS.forEach(p => { p.pendingLogs = p.pendingLogs.filter(l=>l.id!==id); });
-  toast(ok ? '✓ 日誌已核准' : '日誌已退回，通知分包商');
-  renderReview();
-  renderStats();
-  renderAlerts();
+async function doReviewLog(id, approved) {
+  const res = await API.reviewLog(id, approved);
+  if (res.success) { showToast(approved?'✓ 日誌已核准':'日誌已退回','success'); loadReview(); }
+  else showToast(res.error||'操作失敗','error');
 }
 
 /* ══ 申請新專案 Modal ══ */
@@ -807,28 +790,30 @@ function openNewProjModal() {
     let c = '';
     if (step===1) {
       c=`<div class="field"><label>工程名稱 *</label><input id="np-name" placeholder="例：台北南三機房擴建工程"></div>
-         <div class="field-row">
-           <div class="field"><label>工程類型</label><select><option>機房新建</option><option>辦公室裝修</option><option>外牆修繕</option><option>機電工程</option></select></div>
-           <div class="field"><label>所在地</label><input placeholder="例：台北市信義區"></div>
-         </div>
-         <div class="field"><label>工程說明</label><textarea placeholder="簡要說明工程範圍與需求..."></textarea></div>`;
+         <div class="field-row"><div class="field"><label>工程類型</label><select id="np-type"><option>機房新建</option><option>辦公室裝修</option><option>外牆修繕</option><option>機電工程</option></select></div>
+         <div class="field"><label>所在地</label><input id="np-loc" placeholder="例：台北市信義區"></div></div>
+         <div class="field"><label>工程說明</label><textarea id="np-desc" placeholder="簡要說明工程範圍與需求..."></textarea></div>`;
     } else if (step===2) {
       c=`<div class="field-row">
-           <div class="field"><label>預計開工日</label><input type="date" id="np-start" value="2025-08-01"></div>
-           <div class="field"><label>預定完工日</label><input type="date" id="np-end" value="2026-03-31"></div>
+           <div class="field"><label>預計開工日</label><input type="date" id="np-start"></div>
+           <div class="field"><label>預定完工日</label><input type="date" id="np-end"></div>
          </div>
          <div class="field-row">
            <div class="field"><label>估計預算（元）</label><input type="number" id="np-budget" placeholder="0"></div>
-           <div class="field"><label>優先程度</label><select><option>正常</option><option>高</option><option>緊急</option></select></div>
+           <div class="field"><label>優先程度</label><select id="np-pri"><option>正常</option><option>高</option><option>緊急</option></select></div>
          </div>
          <div class="alert alert-info" style="margin-top:4px"><i class="ti ti-info-circle" style="font-size:15px;flex-shrink:0"></i><span>申請送出後將通知主管審核，核准後專案才正式建立。</span></div>`;
     } else {
-      c=`<div class="alert alert-ok"><i class="ti ti-check-circle" style="font-size:15px;flex-shrink:0"></i><span>確認後申請將送交主管審核，請確認資訊無誤。</span></div>
+      const name = document.getElementById('np-name')?.value||'（未填）';
+      const start= document.getElementById('np-start')?.value||'—';
+      const end  = document.getElementById('np-end')?.value||'—';
+      const bud  = document.getElementById('np-budget')?.value;
+      c=`<div class="alert alert-ok"><i class="ti ti-check-circle" style="font-size:15px;flex-shrink:0"></i><span>確認後申請將送交主管審核。</span></div>
          <div style="background:var(--bg);border-radius:var(--r-sm);padding:14px;font-size:13px;line-height:2.2;border:1px solid var(--border-l)">
-           <div style="display:flex;justify-content:space-between"><span style="color:var(--text3)">工程名稱</span><strong>${document.getElementById('np-name')?.value||'（未填寫）'}</strong></div>
-           <div style="display:flex;justify-content:space-between"><span style="color:var(--text3)">預計開工</span><span>${document.getElementById('np-start')?.value||'—'}</span></div>
-           <div style="display:flex;justify-content:space-between"><span style="color:var(--text3)">預定完工</span><span>${document.getElementById('np-end')?.value||'—'}</span></div>
-           <div style="display:flex;justify-content:space-between"><span style="color:var(--text3)">估計預算</span><span>${document.getElementById('np-budget')?.value?'$'+Number(document.getElementById('np-budget').value).toLocaleString():'—'}</span></div>
+           <div style="display:flex;justify-content:space-between"><span style="color:var(--text3)">工程名稱</span><strong>${name}</strong></div>
+           <div style="display:flex;justify-content:space-between"><span style="color:var(--text3)">預計開工</span><span>${start}</span></div>
+           <div style="display:flex;justify-content:space-between"><span style="color:var(--text3)">預定完工</span><span>${end}</span></div>
+           <div style="display:flex;justify-content:space-between"><span style="color:var(--text3)">估計預算</span><span>${bud?fmt(Number(bud)):'—'}</span></div>
            <div style="display:flex;justify-content:space-between"><span style="color:var(--text3)">送審狀態</span><span class="badge b-pending"><i class="ti ti-clock" style="font-size:10px"></i> 送交主管審核</span></div>
          </div>`;
     }
@@ -841,7 +826,7 @@ function openNewProjModal() {
           <div style="display:flex;gap:8px;margin-top:18px;justify-content:space-between">
             ${step>1 ? `<button class="btn" onclick="step--;draw()"><i class="ti ti-arrow-left"></i> 上一步</button>` : `<button class="btn danger" onclick="closeModal()">取消</button>`}
             ${step<3 ? `<button class="btn pri" onclick="step++;draw()">下一步 <i class="ti ti-arrow-right"></i></button>`
-                     : `<button class="submit-btn" style="margin:0;flex:1" onclick="closeModal();toast('✓ 申請已送出，等待主管審核')"><i class="ti ti-send"></i> 送出申請</button>`}
+                     : `<button class="submit-btn" id="np-submit" style="margin:0;flex:1" onclick="doCreateProj()"><i class="ti ti-send"></i> 送出申請</button>`}
           </div>
         </div>
       </div>`;
@@ -849,105 +834,264 @@ function openNewProjModal() {
   draw();
 }
 
+async function doCreateProj() {
+  const name  = document.getElementById('np-name')?.value?.trim();
+  const start = document.getElementById('np-start')?.value;
+  const end   = document.getElementById('np-end')?.value;
+  const budget= document.getElementById('np-budget')?.value;
+  if (!name) { showToast('請填寫工程名稱','warn'); return; }
+  setBtnLoading('np-submit', true);
+  try {
+    const res = await API.createProject({ name, startDate:start, endDate:end, budget:Number(budget)||0, mgrId: ME });
+    if (res.success) {
+      closeModal();
+      showToast('✓ 申請已送出，等待主管審核','success');
+      const pr = await API.getProjects();
+      PROJECTS = pr.success ? pr.projects : PROJECTS;
+      goPage('list');
+    } else showToast(res.error||'送出失敗','error');
+  } catch(e) { showToast('連線失敗','error'); }
+  setBtnLoading('np-submit', false);
+}
+
+/* ══ 編輯專案 Modal ══ */
+function openEditProjModal(id) {
+  const p = PROJECTS.find(x=>x.id===id); if(!p||!isOwn(p)) return;
+  document.getElementById('modal-area').innerHTML = `
+    <div class="modal-bg" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <div class="modal-title"><span><i class="ti ti-edit"></i> 編輯專案</span><button class="btn sm" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+        <div class="field"><label>工程名稱 *</label><input id="ep-name" value="${p.name}"></div>
+        <div class="field"><label>專案狀態</label>
+          <select id="ep-status">${['規劃設計','工程發包','施工','驗收'].map(s=>`<option${p.status===s?' selected':''}>${s}</option>`).join('')}</select>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>預計進度 %</label><input type="number" id="ep-plan" value="${p.planPct||0}" min="0" max="100"></div>
+          <div class="field"><label>實際進度 %</label><input type="number" id="ep-real" value="${p.realPct||0}" min="0" max="100"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>預算金額</label><input type="number" id="ep-budget" value="${p.budget||0}"></div>
+          <div class="field"><label>契約金額</label><input type="number" id="ep-contract" value="${p.contract||0}"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>契約開工日</label><input type="date" id="ep-start" value="${p.startDate||''}"></div>
+          <div class="field"><label>預定完工日</label><input type="date" id="ep-end" value="${p.endDate||''}"></div>
+        </div>
+        <button class="submit-btn" id="ep-submit" onclick="doUpdateProj('${id}')"><i class="ti ti-check"></i> 儲存變更</button>
+      </div>
+    </div>`;
+}
+
+async function doUpdateProj(id) {
+  const name    = document.getElementById('ep-name').value.trim();
+  const status  = document.getElementById('ep-status').value;
+  const planPct = Number(document.getElementById('ep-plan').value)||0;
+  const realPct = Number(document.getElementById('ep-real').value)||0;
+  const budget  = Number(document.getElementById('ep-budget').value)||0;
+  const contract= Number(document.getElementById('ep-contract').value)||0;
+  const startDate= document.getElementById('ep-start').value;
+  const endDate  = document.getElementById('ep-end').value;
+  if (!name) { showToast('請填寫工程名稱','warn'); return; }
+  setBtnLoading('ep-submit', true);
+  try {
+    const res = await API.updateProject({ id, name, status, planPct, realPct, budget, contract, startDate, endDate });
+    if (res.success) {
+      closeModal();
+      showToast('✓ 專案已更新','success');
+      const pr = await API.getProjects();
+      PROJECTS = pr.success ? pr.projects : PROJECTS;
+      delete TASKS_CACHE[id];
+      goPage('detail', id);
+    } else showToast(res.error||'更新失敗','error');
+  } catch(e) { showToast('連線失敗','error'); }
+}
+
+/* ══ 工項 Modal ══ */
+function openAddTaskModal(projId) {
+  document.getElementById('modal-area').innerHTML = `
+    <div class="modal-bg" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <div class="modal-title"><span><i class="ti ti-plus"></i> 新增工項</span><button class="btn sm" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+        <div class="field"><label>工項名稱 *</label><input id="at-name" placeholder="例：水電管線配置"></div>
+        <div class="field-row">
+          <div class="field"><label>截止日期</label><input type="date" id="at-due"></div>
+          <div class="field"><label>狀態</label><select id="at-status"><option value="todo">待辦</option><option value="doing">進行中</option><option value="done">已完成</option></select></div>
+        </div>
+        <button class="submit-btn" id="at-submit" onclick="doAddTask('${projId}')"><i class="ti ti-check"></i> 新增</button>
+      </div>
+    </div>`;
+}
+
+async function doAddTask(projId) {
+  const name = document.getElementById('at-name').value.trim();
+  const due  = document.getElementById('at-due').value;
+  const status=document.getElementById('at-status').value;
+  if (!name) { showToast('請填寫工項名稱','warn'); return; }
+  setBtnLoading('at-submit', true);
+  try {
+    const res = await API.createTask({ projectId: projId, name, due, status });
+    if (res.success) {
+      closeModal();
+      showToast('✓ 工項已新增','success');
+      delete TASKS_CACHE[projId];
+      renderDetailPage(projId);
+    } else showToast(res.error||'新增失敗','error');
+  } catch(e) { showToast('連線失敗','error'); }
+}
+
+function openEditTaskModal(projId, taskId) {
+  const task = (TASKS_CACHE[projId]||[]).find(t=>t.id===taskId); if(!task) return;
+  document.getElementById('modal-area').innerHTML = `
+    <div class="modal-bg" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <div class="modal-title"><span><i class="ti ti-edit"></i> 編輯工項</span><button class="btn sm" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+        <div class="field"><label>工項名稱 *</label><input id="et-name" value="${task.name}"></div>
+        <div class="field-row">
+          <div class="field"><label>完成進度 %</label><input type="number" id="et-prog" value="${task.progress||0}" min="0" max="100"></div>
+          <div class="field"><label>狀態</label><select id="et-status">
+            <option value="todo"${task.status==='todo'?' selected':''}>待辦</option>
+            <option value="doing"${task.status==='doing'?' selected':''}>進行中</option>
+            <option value="done"${task.status==='done'?' selected':''}>已完成</option>
+          </select></div>
+        </div>
+        <div class="field"><label>截止日期</label><input type="date" id="et-due" value="${task.due||''}"></div>
+        <button class="submit-btn" id="et-submit" onclick="doUpdateTask('${projId}','${taskId}')"><i class="ti ti-check"></i> 儲存</button>
+      </div>
+    </div>`;
+}
+
+async function doUpdateTask(projId, taskId) {
+  const name    = document.getElementById('et-name').value.trim();
+  const progress= Number(document.getElementById('et-prog').value)||0;
+  const status  = document.getElementById('et-status').value;
+  const due     = document.getElementById('et-due').value;
+  if (!name) { showToast('請填寫工項名稱','warn'); return; }
+  setBtnLoading('et-submit', true);
+  try {
+    const res = await API.updateTask({ id: taskId, name, progress, status, due });
+    if (res.success) {
+      closeModal();
+      showToast('✓ 工項已更新','success');
+      delete TASKS_CACHE[projId];
+      renderDetailPage(projId);
+    } else showToast(res.error||'更新失敗','error');
+  } catch(e) { showToast('連線失敗','error'); }
+}
+
 /* ══ 指派分包商 Modal ══ */
-function openAssignModal(projId) {
+async function openAssignModal(projId) {
   const p = PROJECTS.find(x=>x.id===projId); if(!p||!isOwn(p)) return;
+  const tasks = TASKS_CACHE[projId] || [];
+  const subs  = ALL_USERS.filter(u=>u.role==='subcontractor');
   document.getElementById('modal-area').innerHTML = `
     <div class="modal-bg" onclick="if(event.target===this)closeModal()">
       <div class="modal">
         <div class="modal-title"><span><i class="ti ti-link"></i> 指派分包商</span><button class="btn sm" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
         <div class="alert alert-info" style="margin-bottom:16px"><i class="ti ti-info-circle" style="font-size:15px;flex-shrink:0"></i><span>指派後系統產生專屬填報連結，分包商無需登入即可填報。</span></div>
-        <div class="field"><label>選擇分包商</label>
-          <select id="assign-sub"><option value="">請選擇...</option><option>宏鑫泥作</option><option>統合水電</option><option>鴻運鋼筋</option><option>新光模板</option></select>
+        <div class="field"><label>選擇分包商 *</label>
+          <select id="as-sub">
+            <option value="">請選擇...</option>
+            ${subs.map(u=>`<option value="${u.id}">${u.name}</option>`).join('')}
+          </select>
         </div>
         <div class="field"><label>指派工項（可多選）</label>
           <div style="border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden">
-            ${p.tasks.filter(t=>t.status!=='done').map(t=>`
+            ${tasks.filter(t=>t.status!=='done').map(t=>`
               <label style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border-l);cursor:pointer;font-size:13px">
-                <input type="checkbox" style="width:14px;height:14px;cursor:pointer"> ${t.name}
-                <span style="font-size:11px;color:var(--text4);margin-left:auto">${t.due.slice(5)}</span>
-              </label>`).join('')}
+                <input type="checkbox" class="as-task" value="${t.id}" style="width:14px;height:14px"> ${t.name}
+                <span style="font-size:11px;color:var(--text4);margin-left:auto">${(t.due||'').slice(5)||'—'}</span>
+              </label>`).join('') || '<div style="padding:12px 14px;font-size:13px;color:var(--text4)">所有工項已完成</div>'}
           </div>
         </div>
-        <div class="field"><label>填報截止日</label><input type="date" value="2025-07-31"></div>
-        <div class="field"><label>備註說明（給分包商看）</label><textarea placeholder="填報注意事項、特殊要求..."></textarea></div>
-        <button class="submit-btn" onclick="doAssign(${projId})"><i class="ti ti-link"></i> 產出填報連結</button>
+        <div class="field"><label>填報截止日</label><input type="date" id="as-due"></div>
+        <div class="field"><label>備註說明</label><textarea id="as-note" placeholder="填報注意事項..."></textarea></div>
+        <button class="submit-btn" id="as-submit" onclick="doCreateAssign('${projId}')"><i class="ti ti-link"></i> 產出填報連結</button>
       </div>
     </div>`;
 }
 
-function doAssign(projId) {
-  const sub = document.getElementById('assign-sub')?.value;
-  if (!sub) { toast('請選擇分包商'); return; }
-  closeModal();
-  const link = `https://cm.example.com/fill?p=${projId}&token=${Math.random().toString(36).slice(2,10)}`;
-  document.getElementById('modal-area').innerHTML = `
-    <div class="modal-bg" onclick="if(event.target===this)closeModal()">
-      <div class="modal">
-        <div class="modal-title"><span style="color:var(--green)"><i class="ti ti-check-circle"></i> 連結已產出</span><button class="btn sm" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
-        <div class="alert alert-ok"><i class="ti ti-check" style="font-size:15px;flex-shrink:0"></i><span>${sub} 的填報連結已建立，分包商點連結即可直接填報，無需登入帳號。</span></div>
-        <div style="font-size:12px;font-weight:600;color:var(--text3);margin-bottom:6px">填報連結</div>
-        <div class="link-box">
-          <i class="ti ti-link" style="font-size:14px;color:var(--text4);flex-shrink:0"></i>
-          <span class="link-url">${link}</span>
-          <button class="btn sm" onclick="toast('連結已複製')"><i class="ti ti-copy"></i> 複製</button>
-        </div>
-        <div style="display:flex;gap:8px;margin-top:16px">
-          <button class="btn" style="flex:1" onclick="toast('已透過 Email 發送')"><i class="ti ti-mail"></i> Email 發送</button>
-          <button class="btn" style="flex:1" onclick="toast('已透過 Line 分享')"><i class="ti ti-brand-line"></i> Line 分享</button>
-          <button class="btn pri" onclick="closeModal()"><i class="ti ti-check"></i> 完成</button>
-        </div>
-      </div>
-    </div>`;
-  toast('✓ 已指派 '+sub+'，填報連結已產出');
+async function doCreateAssign(projId) {
+  const subId  = document.getElementById('as-sub').value;
+  const taskIds= Array.from(document.querySelectorAll('.as-task:checked')).map(c=>c.value);
+  const dueDate= document.getElementById('as-due').value;
+  const note   = document.getElementById('as-note').value;
+  if (!subId) { showToast('請選擇分包商','warn'); return; }
+  setBtnLoading('as-submit', true);
+  try {
+    const res = await API.createAssign({ projectId: projId, subId, taskIds, dueDate, note });
+    if (res.success) {
+      delete ASSIGNS_CACHE[projId];
+      closeModal();
+      const fillUrl = `${window.location.origin}${window.location.pathname.replace('engineer.html','subcontractor.html')}?token=${res.token}`;
+      document.getElementById('modal-area').innerHTML = `
+        <div class="modal-bg" onclick="if(event.target===this)closeModal()">
+          <div class="modal">
+            <div class="modal-title"><span style="color:var(--green)"><i class="ti ti-check-circle"></i> 連結已產出</span><button class="btn sm" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+            <div class="alert alert-ok"><i class="ti ti-check" style="font-size:15px;flex-shrink:0"></i><span>填報連結已建立，分包商點連結即可直接填報。</span></div>
+            <div style="font-size:12px;font-weight:600;color:var(--text3);margin-bottom:6px">填報連結</div>
+            <div class="link-box">
+              <i class="ti ti-link" style="font-size:14px;color:var(--text4);flex-shrink:0"></i>
+              <span style="font-size:11px;color:var(--text3);font-family:monospace;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${fillUrl}</span>
+              <button class="btn sm" onclick="navigator.clipboard.writeText('${fillUrl}').then(()=>showToast('連結已複製','success'))"><i class="ti ti-copy"></i> 複製</button>
+            </div>
+            <button class="btn pri" style="width:100%;margin-top:14px;justify-content:center" onclick="closeModal()"><i class="ti ti-check"></i> 完成</button>
+          </div>
+        </div>`;
+      showToast('✓ 分包商指派完成','success');
+    } else showToast(res.error||'指派失敗','error');
+  } catch(e) { showToast('連線失敗','error'); }
 }
 
 /* ══ 文件上傳 ══ */
-function triggerUpload(pid) { const fi=document.getElementById('file-input'); fi.onchange=()=>handleFiles(pid,Array.from(fi.files)); fi.value=''; fi.click(); }
-function onDrag(ev,id,enter) { ev.preventDefault(); const dz=document.getElementById('drop-'+id); if(dz) dz.classList.toggle('drag',enter); }
-function onDrop(ev,id) { ev.preventDefault(); const dz=document.getElementById('drop-'+id); if(dz) dz.classList.remove('drag'); handleFiles(id,Array.from(ev.dataTransfer.files)); }
+function triggerUpload(pid) {
+  const fi = document.getElementById('file-input');
+  fi.onchange = () => handleFiles(pid, Array.from(fi.files));
+  fi.value = ''; fi.click();
+}
+function onDrag(ev, id, enter) { ev.preventDefault(); const dz=document.getElementById('drop-'+id); if(dz) dz.classList.toggle('drag', enter); }
+function onDrop(ev, id) { ev.preventDefault(); const dz=document.getElementById('drop-'+id); if(dz) dz.classList.remove('drag'); handleFiles(id, Array.from(ev.dataTransfer.files)); }
 
-function handleFiles(pid, files) {
+async function handleFiles(pid, files) {
   const p = PROJECTS.find(x=>x.id===pid); if(!p||!files.length||!isOwn(p)) return;
   const ok = ['pdf','dwg','dxf','doc','docx','xls','xlsx','jpg','jpeg','png','gif'];
   const valid = files.filter(f=>ok.includes(f.name.split('.').pop().toLowerCase()));
-  if (!valid.length) { toast('不支援此格式'); return; }
-  let pct = 0; uploading[pid]=pct; renderDetailPage(pid);
-  const t = setInterval(()=>{
-    pct = Math.min(pct+Math.floor(Math.random()*18)+5,95); uploading[pid]=pct; renderDetailPage(pid);
-    if (pct>=95) { clearInterval(t); setTimeout(()=>{
-      valid.forEach(f=>{ const ext=f.name.split('.').pop().toLowerCase();
-        p.files.push({id:'f'+Date.now()+Math.random(),name:f.name,ext,size:fmtSz(f.size),by:'王大偉',date:new Date().toLocaleDateString('zh-TW'),url:'#'}); });
-      delete uploading[pid]; renderDetailPage(pid); toast(`✓ ${valid.length} 個文件上傳完成`);
-    },350); }
-  },160);
+  if (!valid.length) { showToast('不支援此格式','warn'); return; }
+  uploading[pid] = 0; renderDetailPage(pid);
+  for (const f of valid) {
+    try {
+      const base64 = await fileToBase64(f);
+      uploading[pid] = 30; renderDetailPage(pid);
+      const res = await API.uploadFile({ projectId: pid, projName: p.name, fileName: f.name, base64, mimeType: f.type, fileSize: f.size });
+      uploading[pid] = 100; renderDetailPage(pid);
+      if (res.success) { delete FILES_CACHE[pid]; showToast(`✓ ${f.name} 上傳完成`,'success'); }
+      else showToast(res.error||'上傳失敗','error');
+    } catch(e) { showToast('上傳失敗','error'); }
+  }
+  delete uploading[pid]; renderDetailPage(pid);
 }
 
-function deleteFile(pid, fid) {
-  const p = PROJECTS.find(x=>x.id===pid); if(!p||!isOwn(p)) return;
+async function doDeleteFile(pid, fid) {
   if (!confirm('確定刪除此文件？')) return;
-  p.files = p.files.filter(f=>f.id!==fid);
-  renderDetailPage(pid); toast('文件已刪除');
+  const res = await API.deleteFile(fid);
+  if (res.success) { delete FILES_CACHE[pid]; showToast('文件已刪除','success'); renderDetailPage(pid); }
+  else showToast(res.error||'刪除失敗','error');
 }
 
+/* ══ 共用 ══ */
 function closeModal() { document.getElementById('modal-area').innerHTML=''; }
 
-/* ══ Toast ══ */
-let _tt;
-function toast(msg) {
-  let el = document.getElementById('_toast');
-  if (!el) { el=document.createElement('div'); el.id='_toast';
-    Object.assign(el.style,{position:'fixed',bottom:'24px',left:'50%',transform:'translateX(-50%)',
-      background:'#1B2A3B',color:'#fff',padding:'10px 20px',borderRadius:'24px',fontSize:'13px',
-      fontWeight:'500',zIndex:'9999',opacity:'0',transition:'opacity .2s',
-      pointerEvents:'none',whiteSpace:'nowrap',boxShadow:'0 4px 16px rgba(0,0,0,.25)'});
-    document.body.appendChild(el); }
-  el.textContent=msg; el.style.opacity='1';
-  clearTimeout(_tt); _tt=setTimeout(()=>el.style.opacity='0',2500);
+function setBtnLoading(id, loading) {
+  const btn = document.getElementById(id); if(!btn) return;
+  btn.disabled = loading;
+  btn.innerHTML = loading ? '<i class="ti ti-loader" style="animation:spin 1s linear infinite"></i> 處理中...' : '<i class="ti ti-check"></i> 確認';
 }
 
-/* ══ 啟動 ══ */
-goPage('list');
+const _s = document.createElement('style');
+_s.textContent = '@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}';
+document.head.appendChild(_s);
+
+// ── 啟動 ──
+init();
 </script>
 </body>
 </html>
