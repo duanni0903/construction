@@ -261,10 +261,10 @@ async function doToggleUser(id){
     const res = await API.toggleUser(id);
     if(res.success){
       u.status = res.status;
-      toast(`${u.name} 已${u.status==='active'?'復權':'停權'}`, u.status==='active'?'success':'warn');
+      showToast(`${u.name} 已${u.status==='active'?'復權':'停權'}`, u.status==='active'?'success':'warn');
       renderUsers();
-    } else { toast(res.error||'操作失敗','error'); }
-  } catch(e){ toast('連線失敗','error'); }
+    } else { showToast(res.error||'操作失敗','error'); }
+  } catch(e){ showToast('連線失敗','error'); }
 }
 
 // ── 所有專案 ──
@@ -325,9 +325,9 @@ async function doDeleteProj(id){
   if(!confirm('確定刪除此專案？此操作不可復原。')) return;
   try {
     const res = await API.deleteProject(id);
-    if(res.success){ toast('專案已刪除','success'); loadProjs(); }
-    else toast(res.error||'刪除失敗','error');
-  } catch(e){ toast('連線失敗','error'); }
+    if(res.success){ showToast('專案已刪除','success'); loadProjs(); }
+    else showToast(res.error||'刪除失敗','error');
+  } catch(e){ showToast('連線失敗','error'); }
 }
 
 // ── 系統設定（靜態顯示，後續可擴充）──
@@ -389,14 +389,14 @@ function openAddUserModal(){
       const role  = ROLE_VAL_TO_KEY[document.getElementById('u-role').value];
       const pw    = document.getElementById('u-pw').value;
       const pw2   = document.getElementById('u-pw2').value;
-      if(!name||!email||!pw){ toast('請填寫所有必填欄位','warn'); return; }
-      if(pw!==pw2){ toast('兩次密碼不一致','warn'); return; }
+      if(!name||!email||!pw){ showToast('請填寫所有必填欄位','warn'); return; }
+      if(pw!==pw2){ showToast('兩次密碼不一致','warn'); return; }
       setBtnLoading('modal-submit-btn', true);
       try {
         const res = await API.createUser({name, email, role, password:pw});
-        if(res.success){ closeModal(); toast(`✓ 帳號「${name}」已建立`,'success'); loadUsers(); }
-        else toast(res.error||'建立失敗','error');
-      } catch(e){ toast('連線失敗','error'); }
+        if(res.success){ closeModal(); showToast(`✓ 帳號「${name}」已建立`,'success'); loadUsers(); }
+        else showToast(res.error||'建立失敗','error');
+      } catch(e){ showToast('連線失敗','error'); }
       setBtnLoading('modal-submit-btn', false);
     }
   );
@@ -422,14 +422,14 @@ function openEditUserModal(id){
       const role  = ROLE_VAL_TO_KEY[document.getElementById('e-role').value];
       const pw    = document.getElementById('e-pw').value;
       const pw2   = document.getElementById('e-pw2').value;
-      if(!name||!email){ toast('請填寫必填欄位','warn'); return; }
-      if(pw&&pw!==pw2){ toast('兩次密碼不一致','warn'); return; }
+      if(!name||!email){ showToast('請填寫必填欄位','warn'); return; }
+      if(pw&&pw!==pw2){ showToast('兩次密碼不一致','warn'); return; }
       setBtnLoading('modal-submit-btn', true);
       try {
         const res = await API.updateUser({id, name, email, role, password:pw||undefined});
-        if(res.success){ closeModal(); toast(`✓ 帳號「${name}」已更新`,'success'); loadUsers(); }
-        else toast(res.error||'更新失敗','error');
-      } catch(e){ toast('連線失敗','error'); }
+        if(res.success){ closeModal(); showToast(`✓ 帳號「${name}」已更新`,'success'); loadUsers(); }
+        else showToast(res.error||'更新失敗','error');
+      } catch(e){ showToast('連線失敗','error'); }
       setBtnLoading('modal-submit-btn', false);
     }
   );
@@ -458,9 +458,9 @@ async function doDeleteUser(id){
   setBtnLoading('del-btn', true);
   try {
     const res = await API.deleteUser(id);
-    if(res.success){ closeModal(); toast('帳號已刪除','success'); loadUsers(); }
-    else toast(res.error||'刪除失敗','error');
-  } catch(e){ toast('連線失敗','error'); }
+    if(res.success){ closeModal(); showToast('帳號已刪除','success'); loadUsers(); }
+    else showToast(res.error||'刪除失敗','error');
+  } catch(e){ showToast('連線失敗','error'); }
 }
 
 function openChangePwModal(){
@@ -470,14 +470,14 @@ function openChangePwModal(){
     async () => {
       const pw=document.getElementById('cp-pw').value;
       const pw2=document.getElementById('cp-pw2').value;
-      if(!pw){ toast('請輸入新密碼','warn'); return; }
-      if(pw!==pw2){ toast('兩次密碼不一致','warn'); return; }
+      if(!pw){ showToast('請輸入新密碼','warn'); return; }
+      if(pw!==pw2){ showToast('兩次密碼不一致','warn'); return; }
       setBtnLoading('modal-submit-btn', true);
       try {
         const res = await API.changePw(_cu.id, pw);
-        if(res.success){ closeModal(); toast('✓ 密碼已更新，請重新登入','success'); setTimeout(logout,1500); }
-        else toast(res.error||'更新失敗','error');
-      } catch(e){ toast('連線失敗','error'); }
+        if(res.success){ closeModal(); showToast('✓ 密碼已更新，請重新登入','success'); setTimeout(logout,1500); }
+        else showToast(res.error||'更新失敗','error');
+      } catch(e){ showToast('連線失敗','error'); }
     }
   );
 }
