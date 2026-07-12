@@ -35,8 +35,8 @@ function callAPI(params) {
     const timeout = setTimeout(() => {
       delete window[cbName];
       if (script.parentNode) script.parentNode.removeChild(script);
-      reject(new Error('API 請求逾時（15秒）'));
-    }, 15000);
+      reject(new Error('API 請求逾時（20秒）'));
+    }, 20000);
 
     window[cbName] = (data) => {
       clearTimeout(timeout);
