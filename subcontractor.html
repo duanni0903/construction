@@ -81,7 +81,7 @@ input[type=range]{width:100%;margin-top:8px;accent-color:var(--blue);cursor:poin
   </div>
   <div class="topnav-right">
     <span class="role-badge"><i class="ti ti-truck" style="font-size:11px"></i> 分包商</span>
-    <span style="font-size:12px;color:rgba(255,255,255,.6)">宏鑫泥作</span>
+    <span style="font-size:12px;color:rgba(255,255,255,.6)" id="sub-name">分包商</span><button class="nav-link" onclick="logout()" style="font-size:12px;color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.2);padding:4px 10px;border-radius:6px;background:transparent;cursor:pointer;font-family:inherit"><i class="ti ti-logout"></i> 登出</button>
   </div>
 </nav>
 
@@ -181,7 +181,10 @@ input[type=range]{width:100%;margin-top:8px;accent-color:var(--blue);cursor:poin
   </div>
 </div>
 
+<script src="api.js"></script>
 <script>
+function logout(){ Auth.clear(); window.location.href="login.html"; }
+
 const TASKS=[
   {id:'t1',name:'水電管線配置',progress:80, due:'2025-07-05',status:'doing'},
   {id:'t2',name:'新隔間牆施作',progress:30, due:'2025-07-20',status:'doing'},
