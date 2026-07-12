@@ -28,36 +28,56 @@ const Auth = {
   isSub()      { return this.getUser()?.role === 'subcontractor'; },
 };
 
-// ── JSONP 呼叫（繞過 CORS）──────────────────────────────────────
-function callAPI(params) {
+// ── API 呼叫（fetch + no-cors fallback）─────────────────────────
+async function callAPI(params) {
+  // 自動帶入 token
+  if (Auth.getToken() && !params.token) {
+    params.token = Auth.getToken();
+  }
+
+  const qs = Object.entries(params)
+    .map(([k,v]) => encodeURIComponent(k) + '=' + encodeURIComponent(
+      typeof v === 'object' ? JSON.stringify(v) : v
+    )).join('&');
+
+  const url = API_URL + '?' + qs;
+
+  // 先嘗試 fetch（follow redirects）
+  try {
+    const res = await fetch(url, {
+      method: 'GET',
+      redirect: 'follow',
+    });
+    const text = await res.text();
+    // Apps Script 回傳純 JSON 或 JSONP callback(json)
+    const json = text.replace(/^[^(]+\(/, '').replace(/\);?\s*$/, '');
+    return JSON.parse(json);
+  } catch(e) {
+    // fetch 失敗則 fallback 到 JSONP
+    return jsonpCall(url);
+  }
+}
+
+function jsonpCall(url) {
   return new Promise((resolve, reject) => {
     const cbName = 'cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
     const timeout = setTimeout(() => {
       delete window[cbName];
-      if (script.parentNode) script.parentNode.removeChild(script);
-      reject(new Error('API 請求逾時（20秒）'));
+      if (script && script.parentNode) script.parentNode.removeChild(script);
+      reject(new Error('API 請求逾時'));
     }, 20000);
 
     window[cbName] = (data) => {
       clearTimeout(timeout);
       delete window[cbName];
-      if (script.parentNode) script.parentNode.removeChild(script);
+      if (script && script.parentNode) script.parentNode.removeChild(script);
       resolve(data);
     };
 
-    // 自動帶入 token
-    if (Auth.getToken() && !params.token) {
-      params.token = Auth.getToken();
-    }
-    params.callback = cbName;
-
-    const qs = Object.entries(params)
-      .map(([k,v]) => encodeURIComponent(k) + '=' + encodeURIComponent(
-        typeof v === 'object' ? JSON.stringify(v) : v
-      )).join('&');
-
+    // 把 callback 參數加進去
+    const cbUrl = url + (url.includes('?') ? '&' : '?') + 'callback=' + cbName;
     const script = document.createElement('script');
-    script.src = API_URL + '?' + qs;
+    script.src = cbUrl;
     script.onerror = () => {
       clearTimeout(timeout);
       delete window[cbName];
