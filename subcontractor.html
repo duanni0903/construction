@@ -81,7 +81,7 @@ input[type=range]{width:100%;margin-top:8px;accent-color:var(--blue);cursor:poin
   </div>
   <div class="topnav-right">
     <span class="role-badge"><i class="ti ti-truck" style="font-size:11px"></i> 分包商</span>
-    <span style="font-size:12px;color:rgba(255,255,255,.6)" id="sub-name">分包商</span><button class="nav-link" onclick="logout()" style="font-size:12px;color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.2);padding:4px 10px;border-radius:6px;background:transparent;cursor:pointer;font-family:inherit"><i class="ti ti-logout"></i> 登出</button>
+    <span style="font-size:12px;color:rgba(255,255,255,.6)" id="sub-name">分包商</span><button class="nav-link" onclick="logout()" style="border:1px solid rgba(255,255,255,.2);padding:5px 12px"><i class="ti ti-logout"></i> 登出</button>
   </div>
 </nav>
 
@@ -183,32 +183,68 @@ input[type=range]{width:100%;margin-top:8px;accent-color:var(--blue);cursor:poin
 
 <script src="api.js"></script>
 <script>
+// ── 登出 ──
 function logout(){ Auth.clear(); window.location.href="login.html"; }
 
-const TASKS=[
-  {id:'t1',name:'水電管線配置',progress:80, due:'2025-07-05',status:'doing'},
-  {id:'t2',name:'新隔間牆施作',progress:30, due:'2025-07-20',status:'doing'},
-];
-const HISTORY=[
-  {date:'2025-06-24',workers:18,weather:'☀️ 晴天',status:'正常施工',note:'防水底層施作進度正常，預計明日完成底層',approved:false},
-  {date:'2025-06-23',workers:15,weather:'⛅ 多雲',status:'正常施工',note:'水電配管施作，完成主線路',approved:true},
-  {date:'2025-06-21',workers:20,weather:'☀️ 晴天',status:'正常施工',note:'隔間拆除完畢，清運廢棄物',approved:true},
-  {date:'2025-06-20',workers:8, weather:'🌧️ 雨天',status:'部分施工',note:'上午雨勢大暫停，下午恢復施工',approved:true},
-  {date:'2025-06-19',workers:18,weather:'☀️ 晴天',status:'正常施工',note:'開始拆除工作，進度順利',approved:true},
-];
-let taskProgress={};TASKS.forEach(t=>taskProgress[t.id]=t.progress);
-let photos=[];
+// ── 從 URL 取得 token ──
+const URL_TOKEN = new URLSearchParams(window.location.search).get('token') || '';
 
-document.getElementById('log-date').value=new Date().toISOString().split('T')[0];
+// ── 狀態 ──
+let ASSIGN     = null;
+let TASKS      = [];
+let HISTORY    = [];
+let taskProgress = {};
+let photos     = [];
 
+// ── 初始載入 ──
+async function init() {
+  if (!URL_TOKEN) {
+    showError('無效的填報連結，請聯絡工程師重新產出連結。');
+    return;
+  }
+  try {
+    const res = await API.getAssign(URL_TOKEN);
+    if (!res.success) { showError(res.error || '連結無效或已失效'); return; }
+    ASSIGN = res.assign;
+    TASKS  = ASSIGN.tasks || [];
+    TASKS.forEach(t => taskProgress[t.id] = t.progress || 0);
+
+    // 更新頁面標題資訊
+    document.querySelector('.proj-name').textContent = ASSIGN.projectName || '工程填報';
+    document.querySelector('.proj-meta').innerHTML = `
+      <span><i class="ti ti-hard-hat" style="font-size:12px"></i> 工程師指派</span>
+      <span><i class="ti ti-calendar-check" style="font-size:12px"></i> 截止：${ASSIGN.dueDate||'—'}</span>
+      <span><i class="ti ti-link" style="font-size:12px"></i> 填報連結有效</span>`;
+    document.getElementById('sub-name').textContent = ASSIGN.subName || '分包商';
+
+    // 載入歷史日誌
+    await loadHistory();
+
+    document.getElementById('log-date').value = new Date().toISOString().split('T')[0];
+    renderTasks();
+  } catch(e) {
+    showError('連線失敗，請稍後再試');
+  }
+}
+
+function showError(msg) {
+  document.querySelector('.wrap').innerHTML = `
+    <div style="text-align:center;padding:5rem 2rem;max-width:500px;margin:0 auto">
+      <i class="ti ti-link-off" style="font-size:48px;color:#A0AEC0;display:block;margin-bottom:16px"></i>
+      <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px">連結無效</div>
+      <div style="font-size:14px;color:var(--text3)">${msg}</div>
+    </div>`;
+}
+
+// ── 工項渲染 ──
 function renderTasks(){
-  document.getElementById('tasks-area').innerHTML=TASKS.map(t=>`
+  document.getElementById('tasks-area').innerHTML = TASKS.map(t=>`
     <div class="task-item">
       <div class="task-top">
         <div class="task-dot" style="background:#185FA5"></div>
         <div class="task-name">${t.name}</div>
         <span class="badge b-work" style="font-size:10px">進行中</span>
-        <span class="task-due"><i class="ti ti-calendar-due" style="font-size:11px"></i> ${t.due.slice(5)}</span>
+        <span class="task-due"><i class="ti ti-calendar-due" style="font-size:11px"></i> ${(t.due||'').slice(5)||'—'}</span>
       </div>
       <div class="progress-input">
         <div class="progress-lbl">
@@ -221,41 +257,57 @@ function renderTasks(){
         <input type="range" min="0" max="100" value="${taskProgress[t.id]}"
           oninput="updateProgress('${t.id}',this.value)" style="margin-top:6px">
       </div>
-    </div>`).join('');
+    </div>`).join('') || '<div style="text-align:center;padding:2rem;color:var(--text4)">尚無指派工項</div>';
 }
 
-function updateProgress(id,val){
-  taskProgress[id]=Number(val);
-  document.getElementById('pct-'+id).textContent=val+'%';
-  document.getElementById('bar-'+id).style.width=val+'%';
+function updateProgress(id, val){
+  taskProgress[id] = Number(val);
+  document.getElementById('pct-'+id).textContent = val+'%';
+  document.getElementById('bar-'+id).style.width = val+'%';
+}
+
+// ── 歷史日誌 ──
+async function loadHistory() {
+  try {
+    const res = await callAPI({ action:'getLogs', projectId: ASSIGN.projectId });
+    if (res.success) {
+      // 只顯示自己填的
+      HISTORY = res.logs.slice(0, 5);
+      renderHistory();
+    }
+  } catch(e) { /* 靜默失敗 */ }
 }
 
 function renderHistory(){
-  document.getElementById('history-area').innerHTML=HISTORY.map(h=>`
+  const el = document.getElementById('history-area');
+  if (!HISTORY.length) {
+    el.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--text4);font-size:13px">尚無填報記錄</div>';
+    return;
+  }
+  el.innerHTML = HISTORY.map(h=>`
     <div class="history-item">
-      <div class="history-date">${h.date.slice(5)}<br><span style="color:${h.approved?'var(--green)':'var(--amber)'}">${h.approved?'✓ 已核准':'⏳ 待審核'}</span></div>
+      <div class="history-date">${(h.date||'').slice(5)}<br>
+        <span style="color:${h.reviewStatus==='approved'?'var(--green)':'var(--amber)'}">
+          ${h.reviewStatus==='approved'?'✓ 已核准':'⏳ 待審核'}
+        </span>
+      </div>
       <div class="history-body">
-        <div class="history-title">${h.weather} · 出工 ${h.workers} 人 · ${h.status}</div>
-        <div class="history-meta">${h.note}</div>
+        <div class="history-title">${h.weather||''} · 出工 ${h.workers||0} 人 · ${h.siteStatus||''}</div>
+        <div class="history-meta">${h.note||''}</div>
       </div>
     </div>`).join('');
 }
 
-function handlePhotoSelect(ev){
-  Array.from(ev.target.files).forEach(addPhoto);
-  ev.target.value='';
-}
-function handlePhotoDrop(ev){
-  ev.preventDefault();
-  Array.from(ev.dataTransfer.files).filter(f=>f.type.startsWith('image/')).forEach(addPhoto);
-}
+// ── 照片處理 ──
+function handlePhotoSelect(ev){ Array.from(ev.target.files).forEach(addPhoto); ev.target.value=''; }
+function handlePhotoDrop(ev){ ev.preventDefault(); Array.from(ev.dataTransfer.files).filter(f=>f.type.startsWith('image/')).forEach(addPhoto); }
 function addPhoto(file){
   const url=URL.createObjectURL(file);
   const id='ph'+Date.now()+Math.random();
-  photos.push({id,url,name:file.name});
+  photos.push({id,url,name:file.name,file});
   renderPhotos();
 }
-function removePhoto(id){photos=photos.filter(p=>p.id!==id);renderPhotos();}
+function removePhoto(id){ photos=photos.filter(p=>p.id!==id); renderPhotos(); }
 function renderPhotos(){
   document.getElementById('photo-grid').innerHTML=photos.map(p=>`
     <div class="photo-thumb">
@@ -264,25 +316,55 @@ function renderPhotos(){
     </div>`).join('');
 }
 
-function submitLog(){
-  const note=document.getElementById('log-note').value.trim();
-  if(!note){toast('請填寫施工說明');return;}
-  toast('✓ 填報已送出，等待工程師 王大偉 審核');
-  document.getElementById('log-note').value='';
-  photos=[];renderPhotos();
-  HISTORY.unshift({date:document.getElementById('log-date').value,workers:Number(document.getElementById('log-workers').value)||0,weather:document.getElementById('log-weather').value,status:document.getElementById('log-status').value,note,approved:false});
-  if(HISTORY.length>5)HISTORY.pop();
-  renderHistory();
+// ── 送出填報 ──
+async function submitLog(){
+  const note = document.getElementById('log-note').value.trim();
+  if (!note) { showToast('請填寫施工說明', 'warn'); return; }
+  if (!ASSIGN) { showToast('連結無效', 'error'); return; }
+
+  const btn = document.querySelector('.submit-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="ti ti-loader" style="animation:spin 1s linear infinite"></i> 送出中...';
+
+  try {
+    // 整理工項進度
+    const taskProgressArr = TASKS.map(t => ({
+      id: t.id, progress: taskProgress[t.id] || 0
+    }));
+
+    const res = await API.subFill(URL_TOKEN, {
+      date:       document.getElementById('log-date').value,
+      weather:    document.getElementById('log-weather').value,
+      workers:    Number(document.getElementById('log-workers').value) || 0,
+      siteStatus: document.getElementById('log-status').value,
+      note,
+      taskProgress: taskProgressArr,
+    });
+
+    if (res.success) {
+      showToast('✓ 填報已送出，等待工程師審核', 'success');
+      document.getElementById('log-note').value = '';
+      photos = []; renderPhotos();
+      await loadHistory();
+    } else {
+      showToast(res.error || '送出失敗', 'error');
+    }
+  } catch(e) {
+    showToast('連線失敗，請稍後再試', 'error');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="ti ti-send"></i> 送出今日填報';
 }
 
-let _tt;
-function toast(msg){
-  let el=document.getElementById('_toast');
-  if(!el){el=document.createElement('div');el.id='_toast';Object.assign(el.style,{position:'fixed',bottom:'24px',left:'50%',transform:'translateX(-50%)',background:'#1B2A3B',color:'#fff',padding:'10px 20px',borderRadius:'24px',fontSize:'13px',fontWeight:'500',zIndex:'9999',opacity:'0',transition:'opacity .2s',pointerEvents:'none',whiteSpace:'nowrap',boxShadow:'0 4px 16px rgba(0,0,0,.25)'});document.body.appendChild(el);}
-  el.textContent=msg;el.style.opacity='1';clearTimeout(_tt);_tt=setTimeout(()=>el.style.opacity='0',2500);
-}
+// spin 動畫
+const _s = document.createElement('style');
+_s.textContent = '@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}';
+document.head.appendChild(_s);
 
-renderTasks();renderHistory();
+// ── 啟動 ──
+document.getElementById('log-date').value = new Date().toISOString().split('T')[0];
+init();
 </script>
 </body>
 </html>
