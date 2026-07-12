@@ -234,71 +234,73 @@ tr.proj-row:hover .name-text{color:var(--blue)}
   <div id="detail-content"></div>
 </div>
 
+<script src="api.js"></script>
 <script>
-const ENG={
-  u3:{name:'王大偉',role:'土木工程師',cls:'av-c'},
-  u5:{name:'李國豪',role:'安全工程師',cls:'av-e'},
-  u6:{name:'張雅婷',role:'建築師',    cls:'av-d'},
-};
-const PROJECTS=[
-  {id:1,name:'台北劍潭大樓5樓辦公室改裝',mgr:'u3',status:'施工',    plan:60, real:40, budget:1200000,contract:990000, startDate:'2025-04-01',endDate:'2025-09-30',duration:183,
-   tasks:[
-     {name:'拆除舊有隔間',progress:100,due:'2025-06-10',status:'done'},
-     {name:'水電管線配置',progress:80, due:'2025-07-05',status:'doing'},
-     {name:'新隔間牆施作',progress:30, due:'2025-07-20',status:'doing'},
-     {name:'天花板工程',  progress:0,  due:'2025-08-01',status:'todo'},
-     {name:'地板材料鋪設',progress:0,  due:'2025-08-15',status:'todo'},
-   ],
-   files:[
-     {name:'施工契約書_2025-04-01.pdf',ext:'pdf',size:'2.4 MB',by:'王大偉',date:'2025/04/01'},
-     {name:'建築平面圖_5F_v2.dwg',    ext:'dwg',size:'8.1 MB',by:'張雅婷',date:'2025/04/15'},
-     {name:'預算明細表_2025Q2.xlsx',  ext:'xlsx',size:'1.2 MB',by:'王大偉',date:'2025/05/03'},
-   ]},
-  {id:2,name:'台北東六機房新建工程',    mgr:'u3',status:'規劃設計',plan:0,  real:0,  budget:0,      contract:0,      startDate:'',endDate:'2026-12-31',duration:0,
-   tasks:[
-     {name:'場地評估與環境調查',progress:100,due:'2025-06-30',status:'done'},
-     {name:'建築設計圖繪製',   progress:35, due:'2025-07-31',status:'doing'},
-   ],files:[]},
-  {id:3,name:'南港展覽館空調系統更新',  mgr:'u5',status:'驗收',    plan:100,real:98, budget:3200000,contract:3100000,startDate:'2024-10-01',endDate:'2025-06-30',duration:273,
-   tasks:[
-     {name:'舊設備拆除',  progress:100,due:'2024-11-30',status:'done'},
-     {name:'新主機安裝',  progress:100,due:'2025-02-28',status:'done'},
-     {name:'系統測試調校',progress:100,due:'2025-06-15',status:'done'},
-     {name:'驗收文件整理',progress:90, due:'2025-06-30',status:'doing'},
-   ],
-   files:[
-     {name:'竣工圖_空調系統.dwg',ext:'dwg',size:'12.3 MB',by:'李國豪',date:'2025/06/18'},
-     {name:'測試報告書.pdf',    ext:'pdf',size:'4.1 MB', by:'李國豪',date:'2025/06/20'},
-   ]},
-  {id:4,name:'信義區辦公大樓外牆修繕',  mgr:'u5',status:'工程發包',plan:0,  real:0,  budget:850000, contract:720000, startDate:'',endDate:'2025-11-30',duration:0,
-   tasks:[
-     {name:'外牆現況調查',progress:100,due:'2025-05-31',status:'done'},
-     {name:'廠商詢比價',  progress:60, due:'2025-07-15',status:'doing'},
-   ],files:[]},
-  {id:5,name:'內湖廠房屋頂防水工程',    mgr:'u6',status:'規劃設計',plan:0,  real:0,  budget:0,      contract:0,      startDate:'',endDate:'2026-03-31',duration:0,
-   tasks:[{name:'現場勘查',progress:30,due:'2025-07-10',status:'doing'}],files:[]},
-];
-let PENDING=[
-  {id:'a1',name:'宜蘭太平機房新建工程',    by:'王大偉',eng:'u3',date:'2025-06-23',budget:'$320萬',note:'配合廠商擴廠需求，新建機房一棟，預計明年第一季完工'},
-  {id:'a2',name:'松山廠房消防設備更新工程', by:'李國豪',eng:'u5',date:'2025-06-25',budget:'$48萬', note:'消防設備年限屆至，需全面更換，配合年度消防安檢'},
-];
+// ── 登入守衛 ──
+if (!requireAuth(['manager'])) { /* 已跳轉 */ }
+const _cu = Auth.getUser();
+if (_cu) document.querySelector('.user-pill').innerHTML =
+  `<i class="ti ti-user-circle" style="font-size:14px"></i> ${_cu.name}`;
+
+// ── 狀態 ──
+let PROJECTS  = [];
+let ALL_USERS = [];
+let ENG       = {};
+let PENDING   = [];
+let TASKS_CACHE = {};
+let FILES_CACHE = {};
 
 const SCLS={規劃設計:'b-plan',工程發包:'b-bid',施工:'b-work',驗收:'b-chk'};
 const TCOL={done:'#0F6E56',doing:'#185FA5',todo:'#A0AEC0'};
 const TLBL={done:'已完成',doing:'進行中',todo:'待辦'};
 const EXT_ICO={pdf:'ti-file-type-pdf',dwg:'ti-vector-triangle',dxf:'ti-vector-triangle',doc:'ti-file-type-doc',docx:'ti-file-type-doc',xls:'ti-file-spreadsheet',xlsx:'ti-file-spreadsheet',jpg:'ti-photo',jpeg:'ti-photo',png:'ti-photo'};
 const EXT_CLS={pdf:'ico-pdf',dwg:'ico-dwg',dxf:'ico-dwg',doc:'ico-doc',docx:'ico-doc',xls:'ico-xls',xlsx:'ico-xls',jpg:'ico-img',jpeg:'ico-img',png:'ico-img'};
-const fmt=n=>n?'$'+Number(n).toLocaleString():'—';
-const remain=p=>p.budget&&p.contract?p.budget-p.contract:null;
-const diff=p=>p.real-p.plan;
-const diffStr=d=>d===0?'—':(d>0?'+':'')+d+'%';
-const diffCls=d=>d>0?'diff-pos':d<0?'diff-neg':'diff-zero';
-const noWork=p=>['規劃設計','工程發包'].includes(p.status);
-const progCol=(r,pl)=>{const d=r-pl;return d<-10?'var(--red)':d<0?'var(--amber)':'var(--blue)'};
-const taskAvg=t=>t.length?Math.round(t.reduce((a,x)=>a+x.progress,0)/t.length):0;
-const isOver=t=>t.status!=='done'&&t.due&&new Date(t.due)<new Date();
+const AV_COLORS=['av-a','av-b','av-c','av-d','av-e'];
 
-let filterStatus='全部',filterMgr='',activeTab={},activeProjId=null;
+const fmt    = n => n ? '$'+Number(n).toLocaleString() : '—';
+const remain = p => (p.budget&&p.contract) ? p.budget-p.contract : null;
+const diff   = p => (p.realPct||0)-(p.planPct||0);
+const diffStr= d => d===0?'—':(d>0?'+':'')+d+'%';
+const diffCls= d => d>0?'diff-pos':d<0?'diff-neg':'diff-zero';
+const noWork = p => ['規劃設計','工程發包'].includes(p.status);
+const progCol= (r,pl)=>{const d=r-pl;return d<-10?'var(--red)':d<0?'var(--amber)':'var(--blue)'};
+const taskAvg= t=>t.length?Math.round(t.reduce((a,x)=>a+(x.progress||0),0)/t.length):0;
+const isOver = t=>t.status!=='done'&&t.due&&new Date(t.due)<new Date();
+const avCls  = id=>{const i=parseInt((id||'').replace(/\D/g,''))||0;return AV_COLORS[i%5];};
+const engName= id=>(ENG[id]||{}).name||id||'—';
+
+let filterStatus='全部', filterMgr='', activeTab={}, activeProjId=null;
+
+// ── 初始載入 ──
+async function init(retry=0) {
+  try {
+    const pr = await callAPI({action:'getProjects'});
+    const ur = await callAPI({action:'getUsers'});
+    PROJECTS  = pr.success ? pr.projects : [];
+    ALL_USERS = ur.success ? ur.users    : [];
+    ENG = {};
+    ALL_USERS.forEach(u => {
+      ENG[u.id] = { name: u.name, role: u.role, cls: avCls(u.id) };
+    });
+    // 待審核 = 申請狀態為 pending 的專案
+    PENDING = PROJECTS.filter(p => p.applyStatus === 'pending');
+    updateApproveBadge();
+    goPage('list');
+  } catch(e) {
+    console.error('init error:', e);
+    if (retry < 2) {
+      setTimeout(() => init(retry+1), 2000);
+    } else {
+      document.getElementById('page-list').innerHTML = `
+        <div style="text-align:center;padding:5rem 2rem">
+          <i class="ti ti-wifi-off" style="font-size:40px;color:var(--text4);display:block;margin-bottom:16px"></i>
+          <div style="font-size:16px;font-weight:600;color:var(--text2);margin-bottom:8px">載入失敗</div>
+          <button class="btn pri" onclick="init(0)" style="margin:0 auto"><i class="ti ti-refresh"></i> 重新載入</button>
+        </div>`;
+      document.getElementById('page-list').classList.add('active');
+    }
+  }
+}
 
 function updateApproveBadge(){
   const b=document.getElementById('approve-badge');
@@ -307,7 +309,7 @@ function updateApproveBadge(){
 }
 
 function goPage(id,projId){
-  if(projId!==undefined)activeProjId=projId;
+  if(projId!==undefined) activeProjId=projId;
   ['list','approve','detail'].forEach(p=>document.getElementById('page-'+p).classList.toggle('active',p===id));
   ['list','approve'].forEach(k=>{const b=document.getElementById('nl-'+k);if(b)b.classList.toggle('active',k===id);});
   const bc=document.getElementById('breadcrumb');
@@ -320,17 +322,19 @@ function goPage(id,projId){
     bc.innerHTML=`<span class="bc-cur">${labels[id]||id}</span>`;
   }
   if(id==='list'){renderStats();renderFilters();renderTable();}
-  if(id==='approve')renderApprove();
+  if(id==='approve') renderApprove();
   window.scrollTo(0,0);
 }
 
+// ── 主列表 ──
 function renderStats(){
-  document.getElementById('list-sub').textContent=new Date().toLocaleDateString('zh-TW',{year:'numeric',month:'long',day:'numeric'})+' · 主管視角（唯讀）';
-  const totB=PROJECTS.reduce((a,p)=>a+p.budget,0);
+  document.getElementById('list-sub').textContent=
+    new Date().toLocaleDateString('zh-TW',{year:'numeric',month:'long',day:'numeric'})+' · 主管視角（唯讀）';
+  const totB=PROJECTS.reduce((a,p)=>a+Number(p.budget||0),0);
   const totR=PROJECTS.reduce((a,p)=>a+(remain(p)||0),0);
   document.getElementById('stats').innerHTML=`
     <div class="stat-card"><div class="stat-val">${PROJECTS.length}</div><div class="stat-lbl">專案總數</div><div class="stat-sub">${PROJECTS.filter(p=>p.status==='施工').length} 個施工中</div></div>
-    <div class="stat-card"><div class="stat-val">${PENDING.length}</div><div class="stat-lbl">待審核申請</div><div class="stat-sub" style="color:${PENDING.length>0?'var(--amber)':'var(--text4)'}">需你審核</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:${PENDING.length>0?'var(--amber)':'inherit'}">${PENDING.length}</div><div class="stat-lbl">待審核申請</div><div class="stat-sub" style="color:${PENDING.length>0?'var(--amber)':'var(--text4)'}">${PENDING.length>0?'需你審核':''}</div></div>
     <div class="stat-card"><div class="stat-val" style="font-size:20px">${totB?'$'+Math.round(totB/10000)+'萬':'—'}</div><div class="stat-lbl">預算總額</div></div>
     <div class="stat-card"><div class="stat-val" style="font-size:20px;color:${totR<0?'var(--red)':'inherit'}">${totB?'$'+Math.round(totR/10000)+'萬':'—'}</div><div class="stat-lbl">剩餘預算</div></div>`;
 }
@@ -341,12 +345,18 @@ function renderFilters(){
     `<span class="filter-label">狀態</span>`+
     sts.map(s=>`<button class="chip${filterStatus===s?' active':''}" onclick="setSts('${s}')">${s}</button>`).join('')+
     `<div class="filter-sep"></div><span class="filter-label">負責人</span>`+
-    Object.entries(ENG).map(([id,e])=>`<button class="chip${filterMgr===id?' mgr-active':''}" onclick="setMgr('${id}')" style="display:flex;align-items:center;gap:4px"><div class="av ${e.cls}" style="width:16px;height:16px;font-size:7px">${e.name[0]}</div>${e.name.slice(0,3)}</button>`).join('');
+    Object.entries(ENG).filter(([,e])=>e.role==='engineer').map(([id,e])=>
+      `<button class="chip${filterMgr===id?' mgr-active':''}" onclick="setMgr('${id}')" style="display:flex;align-items:center;gap:4px">
+        <div class="av ${e.cls}" style="width:16px;height:16px;font-size:7px">${e.name[0]}</div>${e.name.slice(0,3)}
+      </button>`).join('');
   const mb=document.getElementById('mgr-bar');
   if(filterMgr&&ENG[filterMgr]){
-    const e=ENG[filterMgr];mb.classList.add('show');
-    const av=document.getElementById('mgr-bar-av');av.textContent=e.name[0];av.className='av '+e.cls;av.style.cssText='width:24px;height:24px;font-size:11px';
-    document.getElementById('mgr-bar-lbl').textContent=`篩選中：${e.name} 負責的專案（共 ${PROJECTS.filter(p=>p.mgr===filterMgr).length} 個）`;
+    const e=ENG[filterMgr]; mb.classList.add('show');
+    const av=document.getElementById('mgr-bar-av');
+    av.textContent=e.name[0]; av.className='av '+e.cls;
+    av.style.cssText='width:24px;height:24px;font-size:11px';
+    document.getElementById('mgr-bar-lbl').textContent=
+      `篩選中：${e.name} 負責的專案（共 ${PROJECTS.filter(p=>p.mgrId===filterMgr).length} 個）`;
   } else mb.classList.remove('show');
 }
 function setSts(s){filterStatus=s;renderFilters();renderTable();}
@@ -356,72 +366,99 @@ function clickMgr(id,ev){ev.stopPropagation();setMgr(id);}
 
 function renderTable(){
   let list=PROJECTS;
-  if(filterStatus!=='全部')list=list.filter(p=>p.status===filterStatus);
-  if(filterMgr)list=list.filter(p=>p.mgr===filterMgr);
+  if(filterStatus!=='全部') list=list.filter(p=>p.status===filterStatus);
+  if(filterMgr) list=list.filter(p=>p.mgrId===filterMgr);
   const tbody=document.getElementById('proj-tbody');
-  if(!list.length){tbody.innerHTML=`<tr><td colspan="11" class="empty"><i class="ti ti-folder-off"></i>無符合條件的專案</td></tr>`;return;}
+  if(!list.length){
+    tbody.innerHTML=`<tr><td colspan="11" class="empty"><i class="ti ti-folder-off"></i>無符合條件的專案</td></tr>`;
+    return;
+  }
   tbody.innerHTML=list.map(p=>{
-    const e=ENG[p.mgr],d=diff(p),rem=remain(p),nw=noWork(p);
-    return`<tr class="proj-row" onclick="goPage('detail',${p.id})">
-      <td style="color:var(--text4);font-size:12px;font-weight:600">${p.id}</td>
+    const e=ENG[p.mgrId]||{},d=diff(p),rem=remain(p),nw=noWork(p);
+    return`<tr class="proj-row" onclick="goPage('detail','${p.id}')">
+      <td style="color:var(--text4);font-size:12px;font-weight:600">${p.id.slice(-4)}</td>
       <td><div class="name-cell">
         <i class="ti ti-chevron-right" style="font-size:12px;color:var(--text4);flex-shrink:0"></i>
         <span class="name-text">${p.name}</span>
-        ${p.files&&p.files.length?`<span class="attach-pill"><i class="ti ti-paperclip" style="font-size:10px"></i>${p.files.length}</span>`:''}
+        ${p.applyStatus==='pending'?`<span class="badge b-pending" style="font-size:10px">待審核</span>`:''}
       </div></td>
-      <td><div class="mgr-chip${filterMgr===p.mgr?' hl':''}" onclick="clickMgr('${p.mgr}',event)">
-        <div class="av ${e?e.cls:''}" style="width:22px;height:22px;font-size:9px">${e?e.name[0]:''}</div>
-        <span style="font-size:12px;font-weight:500">${e?e.name.slice(0,3)+'君':''}</span>
+      <td><div class="mgr-chip${filterMgr===p.mgrId?' hl':''}" onclick="clickMgr('${p.mgrId}',event)">
+        <div class="av ${e.cls||'av-a'}" style="width:22px;height:22px;font-size:9px">${(e.name||'?')[0]}</div>
+        <span style="font-size:12px;font-weight:500">${(e.name||'').slice(0,3)}</span>
       </div></td>
       <td><span class="badge ${SCLS[p.status]||'b-plan'}">${p.status}</span></td>
-      <td>${nw?`<span style="color:var(--text4);font-size:12px">—</span>`:`<div class="prog-cell"><div class="prog-track"><div class="prog-fill" style="width:${p.plan}%;background:var(--text4)"></div></div><span class="prog-num">${p.plan}%</span></div>`}</td>
-      <td>${nw?`<span style="color:var(--text4);font-size:12px">—</span>`:`<div class="prog-cell"><div class="prog-track"><div class="prog-fill" style="width:${p.real}%;background:${progCol(p.real,p.plan)}"></div></div><span class="prog-num">${p.real}%</span></div>`}</td>
+      <td>${nw?`<span style="color:var(--text4);font-size:12px">—</span>`:`<div class="prog-cell"><div class="prog-track"><div class="prog-fill" style="width:${p.planPct}%;background:var(--text4)"></div></div><span class="prog-num">${p.planPct}%</span></div>`}</td>
+      <td>${nw?`<span style="color:var(--text4);font-size:12px">—</span>`:`<div class="prog-cell"><div class="prog-track"><div class="prog-fill" style="width:${p.realPct}%;background:${progCol(p.realPct,p.planPct)}"></div></div><span class="prog-num">${p.realPct}%</span></div>`}</td>
       <td class="r"><span class="${diffCls(d)}">${nw?'—':diffStr(d)}</span></td>
       <td class="r" style="font-size:12px;font-weight:600">${p.budget?fmt(p.budget):'—'}</td>
       <td class="r" style="font-size:12px;color:${rem!==null&&rem<0?'var(--red)':'inherit'}">${rem!==null?fmt(rem):'—'}</td>
       <td style="font-size:12px">${p.endDate||'—'}</td>
-      <td><button class="btn sm" onclick="event.stopPropagation();goPage('detail',${p.id})"><i class="ti ti-eye"></i></button></td>
+      <td><button class="btn sm" onclick="event.stopPropagation();goPage('detail','${p.id}')"><i class="ti ti-eye"></i></button></td>
     </tr>`;
   }).join('');
 }
 
+// ── 審核申請 ──
 function renderApprove(){
   const el=document.getElementById('approve-content');
-  if(!PENDING.length){el.innerHTML=`<div class="empty"><i class="ti ti-check-circle"></i>目前無待審核申請</div>`;return;}
+  if(!PENDING.length){
+    el.innerHTML=`<div class="section-hd"><span class="section-title">待審核（0）</span></div><div class="empty"><i class="ti ti-check-circle"></i>目前無待審核申請</div>`;
+    return;
+  }
   el.innerHTML=`<div class="section-hd"><span class="section-title">待審核（${PENDING.length}）</span></div>`+
-  PENDING.map(a=>{
-    const e=ENG[a.eng];
+  PENDING.map(p=>{
+    const e=ENG[p.mgrId]||{};
     return`<div class="approval-item">
-      <div class="av ${e?e.cls:''}" style="width:40px;height:40px;font-size:16px;flex-shrink:0">${e?e.name[0]:''}</div>
+      <div class="av ${e.cls||'av-a'}" style="width:40px;height:40px;font-size:16px;flex-shrink:0">${(e.name||'?')[0]}</div>
       <div class="approval-info">
-        <div class="approval-name">${a.name}</div>
-        <div class="approval-meta">申請人：${a.by} · ${a.date} · 預估預算：${a.budget}</div>
-        <div class="approval-note">${a.note}</div>
+        <div class="approval-name">${p.name}</div>
+        <div class="approval-meta">申請人：${e.name||p.mgrId} · ${p.createdAt||''} · 預算：${p.budget?fmt(p.budget):'未填'}</div>
+        <div class="approval-note">專案申請狀態：等待主管審核</div>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;align-items:flex-end">
         <span class="badge b-pending"><i class="ti ti-clock" style="font-size:10px"></i> 待審核</span>
-        <button class="btn sm success" onclick="doApprove('${a.id}',true)"><i class="ti ti-check"></i> 核准</button>
-        <button class="btn sm danger"  onclick="doApprove('${a.id}',false)"><i class="ti ti-x"></i> 退回</button>
+        <button class="btn sm success" onclick="doApprove('${p.id}',true)"><i class="ti ti-check"></i> 核准</button>
+        <button class="btn sm danger"  onclick="doApprove('${p.id}',false)"><i class="ti ti-x"></i> 退回</button>
       </div>
     </div>`;
   }).join('');
 }
 
-function doApprove(id,ok){
-  PENDING=PENDING.filter(a=>a.id!==id);
-  updateApproveBadge();
-  toast(ok?'✓ 已核准，專案建立中，工程師將收到通知':'已退回申請，工程師將收到通知');
-  renderApprove();
-  renderStats();
+async function doApprove(id, approved){
+  try {
+    const res = await API.approveProject(id, approved);
+    if(res.success){
+      // 更新本地資料
+      const p = PROJECTS.find(x=>x.id===id);
+      if(p) p.applyStatus = approved ? 'approved' : 'rejected';
+      PENDING = PROJECTS.filter(p=>p.applyStatus==='pending');
+      updateApproveBadge();
+      showToast(approved?'✓ 已核准，工程師將收到通知':'已退回申請，工程師將收到通知', approved?'success':'warn');
+      renderApprove();
+      renderStats();
+    } else showToast(res.error||'操作失敗','error');
+  } catch(e){ showToast('連線失敗','error'); }
 }
 
-function renderDetail(id){
+// ── 詳情頁 ──
+async function renderDetail(id){
   const p=PROJECTS.find(x=>x.id===id);if(!p)return;
-  const e=ENG[p.mgr],avg=taskAvg(p.tasks),rem=remain(p),d=diff(p);
+  const e=ENG[p.mgrId]||{};
+  const rem=remain(p);
   const dur=p.duration||(p.startDate&&p.endDate?Math.round((new Date(p.endDate)-new Date(p.startDate))/864e5):null);
   const nw=noWork(p);
-  const done=p.tasks.filter(t=>t.status==='done').length,doing=p.tasks.filter(t=>t.status==='doing').length;
   const tab=activeTab[id]||'tasks';
+
+  // 載入工項
+  if(!TASKS_CACHE[id]){
+    const tr=await callAPI({action:'getTasks',projectId:id});
+    TASKS_CACHE[id]=tr.success?tr.tasks:[];
+  }
+  const tasks=TASKS_CACHE[id];
+  const done=tasks.filter(t=>t.status==='done').length;
+  const doing=tasks.filter(t=>t.status==='doing').length;
+  const avg=taskAvg(tasks);
+  const d=diff(p);
 
   document.getElementById('detail-hero-wrap').innerHTML=`
     <div class="detail-hero">
@@ -430,7 +467,7 @@ function renderDetail(id){
           <div class="detail-name">${p.name}</div>
           <div class="detail-meta">
             <span class="badge ${SCLS[p.status]||'b-plan'}" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.2)">${p.status}</span>
-            ${e?`<div class="av ${e.cls}" style="width:20px;height:20px;font-size:9px">${e.name[0]}</div><span style="font-size:13px;color:rgba(255,255,255,.7)">${e.name} · ${e.role}</span>`:''}
+            ${e.name?`<div class="av ${e.cls}" style="width:20px;height:20px;font-size:9px">${e.name[0]}</div><span style="font-size:13px;color:rgba(255,255,255,.7)">${e.name} · ${e.role||''}</span>`:''}
             <span style="font-size:11px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:2px 8px"><i class="ti ti-eye" style="font-size:10px"></i> 唯讀</span>
           </div>
         </div>
@@ -445,60 +482,76 @@ function renderDetail(id){
 
   document.getElementById('detail-metrics').innerHTML=`
     <div class="metric"><div class="metric-lbl">工項進度</div><div class="metric-val">${avg}%</div></div>
-    <div class="metric"><div class="metric-lbl">完成 / 進行 / 待辦</div><div class="metric-val" style="font-size:18px">${done}<span style="color:var(--text4);font-size:14px"> / ${doing} / ${p.tasks.length-done-doing}</span></div></div>
+    <div class="metric"><div class="metric-lbl">完成 / 進行 / 待辦</div><div class="metric-val" style="font-size:18px">${done}<span style="color:var(--text4);font-size:14px"> / ${doing} / ${tasks.length-done-doing}</span></div></div>
     <div class="metric"><div class="metric-lbl">預算金額</div><div class="metric-val" style="font-size:18px">${p.budget?fmt(p.budget):'—'}</div></div>
     <div class="metric"><div class="metric-lbl">剩餘預算</div><div class="metric-val" style="font-size:18px;color:${rem!==null&&rem<0?'var(--red)':'inherit'}">${rem!==null?fmt(rem):'—'}</div></div>`;
 
   document.getElementById('detail-prog-bar').innerHTML=!nw?`
     <div class="big-bar-wrap">
-      <div class="big-bar-lbl"><span>實際進度 ${p.real}%</span><span>預計進度 ${p.plan}%</span></div>
-      <div class="big-bar"><div class="big-fill" style="width:${p.real}%;background:${progCol(p.real,p.plan)}"></div></div>
+      <div class="big-bar-lbl"><span>實際進度 ${p.realPct}%</span><span>預計進度 ${p.planPct}%</span></div>
+      <div class="big-bar"><div class="big-fill" style="width:${p.realPct}%;background:${progCol(p.realPct,p.planPct)}"></div></div>
     </div>`:'';
 
-  const tabs=[{k:'tasks',l:'工項任務',i:'ti-checklist'},{k:'files',l:`契約文件 (${p.files.length})`,i:'ti-files'},{k:'budget',l:'預算資訊',i:'ti-report-money'},{k:'engineer',l:'負責工程師',i:'ti-user'}];
-  document.getElementById('detail-tabs').innerHTML=tabs.map(t=>`<button class="tab${tab===t.k?' active':''}" onclick="switchTab(${id},'${t.k}')"><i class="ti ${t.i}"></i>${t.l}</button>`).join('');
+  const tabs=[
+    {k:'tasks',l:'工項任務',i:'ti-checklist'},
+    {k:'files',l:'契約文件',i:'ti-files'},
+    {k:'budget',l:'預算資訊',i:'ti-report-money'},
+    {k:'engineer',l:'負責工程師',i:'ti-user'},
+  ];
+  document.getElementById('detail-tabs').innerHTML=
+    tabs.map(t=>`<button class="tab${tab===t.k?' active':''}" onclick="switchTab('${id}','${t.k}')"><i class="ti ${t.i}"></i>${t.l}</button>`).join('');
 
   let html='';
   if(tab==='tasks'){
-    html=`<div class="section-card"><div class="section-hd"><span class="section-title">工項清單（${p.tasks.length} 項）</span><span class="readonly-note"><i class="ti ti-lock"></i> 主管唯讀</span></div>
-      ${p.tasks.map(t=>`<div class="task-item">
+    html=`<div class="section-card">
+      <div class="section-hd"><span class="section-title">工項清單（${tasks.length} 項）</span><span class="readonly-note"><i class="ti ti-lock"></i> 主管唯讀</span></div>
+      ${tasks.map(t=>`<div class="task-item">
         <div class="task-dot" style="background:${TCOL[t.status]}"></div>
         <div class="task-name">${t.name}</div>
-        <div class="task-mini-bar"><div class="task-mini-fill" style="width:${t.progress}%"></div></div>
-        <span class="task-pct">${t.progress}%</span>
-        <span class="badge ${t.status==='done'?'b-chk':t.status==='doing'?'b-work':'b-plan'}" style="font-size:10px">${TLBL[t.status]}</span>
-        <span class="task-due" style="color:${isOver(t)?'var(--red)':'var(--text4)'}"><i class="ti ti-calendar-due" style="font-size:11px"></i> ${t.due.slice(5)}</span>
+        <div class="task-mini-bar"><div class="task-mini-fill" style="width:${t.progress||0}%"></div></div>
+        <span class="task-pct">${t.progress||0}%</span>
+        <span class="badge ${t.status==='done'?'b-chk':t.status==='doing'?'b-work':'b-plan'}" style="font-size:10px">${TLBL[t.status]||t.status}</span>
+        <span class="task-due" style="color:${isOver(t)?'var(--red)':'var(--text4)'}"><i class="ti ti-calendar-due" style="font-size:11px"></i> ${(t.due||'').slice(5)||'—'}</span>
       </div>`).join('')||`<div class="empty"><i class="ti ti-checklist"></i>尚無工項資料</div>`}
     </div>`;
   } else if(tab==='files'){
-    html=`<div class="section-card"><div class="section-hd"><span class="section-title">契約文件與圖說</span><span class="readonly-note"><i class="ti ti-lock"></i> 主管唯讀</span></div>
-      ${p.files.map(f=>`<div class="file-item">
+    if(!FILES_CACHE[id]){
+      const fr=await callAPI({action:'getFiles',projectId:id});
+      FILES_CACHE[id]=fr.success?fr.files:[];
+    }
+    const files=FILES_CACHE[id];
+    html=`<div class="section-card">
+      <div class="section-hd"><span class="section-title">契約文件與圖說</span><span class="readonly-note"><i class="ti ti-lock"></i> 主管唯讀</span></div>
+      ${files.map(f=>`<div class="file-item">
         <div class="file-ico ${EXT_CLS[f.ext]||'ico-other'}"><i class="ti ${EXT_ICO[f.ext]||'ti-file'}"></i></div>
-        <div class="file-info"><div class="file-name">${f.name}</div><div class="file-meta">${f.ext.toUpperCase()} · ${f.size} · 上傳者：${f.by} · ${f.date}</div></div>
-        <a class="btn sm" href="#" onclick="toast('下載：'+event.target.closest('.file-item').querySelector('.file-name').textContent);return false"><i class="ti ti-download"></i> 下載</a>
+        <div class="file-info"><div class="file-name">${f.name}</div><div class="file-meta">${(f.ext||'').toUpperCase()} · ${f.size||'—'} · ${f.uploadedAt||''}</div></div>
+        <a class="btn sm" href="${f.driveUrl||'#'}" target="_blank"><i class="ti ti-download"></i> 下載</a>
       </div>`).join('')||`<div class="empty"><i class="ti ti-file-off"></i>尚無文件</div>`}
     </div>`;
   } else if(tab==='budget'){
-    html=remain(p)!==null?`<div class="section-card"><div class="section-hd"><span class="section-title">預算資訊</span><span class="readonly-note"><i class="ti ti-lock"></i> 主管唯讀</span></div>
+    html=remain(p)!==null?`<div class="section-card">
+      <div class="section-hd"><span class="section-title">預算資訊</span><span class="readonly-note"><i class="ti ti-lock"></i> 主管唯讀</span></div>
       <div class="budget-grid">
         <div class="budget-item"><div class="budget-lbl">預算金額</div><div class="budget-val">${fmt(p.budget)}</div></div>
         <div class="budget-item"><div class="budget-lbl">契約金額</div><div class="budget-val">${fmt(p.contract)}</div></div>
         <div class="budget-item"><div class="budget-lbl">剩餘預算</div><div class="budget-val" style="color:${remain(p)<0?'var(--red)':'var(--green)'}">${fmt(remain(p))}</div></div>
       </div>
-      <div style="margin-top:16px">
+      ${p.budget?`<div style="margin-top:16px">
         <div class="big-bar-lbl"><span>契約 / 預算比</span><span>${Math.round(p.contract/p.budget*100)}%</span></div>
         <div class="big-bar"><div class="big-fill" style="width:${Math.round(p.contract/p.budget*100)}%;background:var(--blue)"></div></div>
-      </div></div>`:`<div class="section-card"><div class="empty"><i class="ti ti-report-money"></i>尚未填入預算資料</div></div>`;
+      </div>`:''}
+    </div>`:`<div class="section-card"><div class="empty"><i class="ti ti-report-money"></i>尚未填入預算資料</div></div>`;
   } else if(tab==='engineer'){
-    const others=PROJECTS.filter(x=>x.mgr===p.mgr&&x.id!==p.id);
-    html=`<div class="section-card"><div class="section-hd"><span class="section-title">負責工程師</span></div>
+    const others=PROJECTS.filter(x=>x.mgrId===p.mgrId&&x.id!==p.id);
+    html=`<div class="section-card">
+      <div class="section-hd"><span class="section-title">負責工程師</span></div>
       <div class="eng-hero">
-        <div class="av ${e?e.cls:''}" style="width:44px;height:44px;font-size:18px">${e?e.name[0]:''}</div>
-        <div style="flex:1"><div style="font-size:16px;font-weight:700;margin-bottom:3px">${e?e.name:'—'}</div><div style="font-size:13px;color:var(--text3)">${e?e.role:''}</div></div>
-        <button class="btn sm" onclick="setMgr('${p.mgr}');goPage('list')"><i class="ti ti-filter"></i> 查看所有專案</button>
+        <div class="av ${e.cls||'av-a'}" style="width:44px;height:44px;font-size:18px">${(e.name||'?')[0]}</div>
+        <div style="flex:1"><div style="font-size:16px;font-weight:700;margin-bottom:3px">${e.name||'—'}</div><div style="font-size:13px;color:var(--text3)">${e.role||''}</div></div>
+        <button class="btn sm" onclick="setMgr('${p.mgrId}');goPage('list')"><i class="ti ti-filter"></i> 查看所有專案</button>
       </div>
       ${others.length?`<div style="margin-top:14px"><div class="section-hd" style="margin-bottom:8px"><span class="section-title">其他負責專案（${others.length}）</span></div>
-        ${others.map(x=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-l);cursor:pointer" onclick="goPage('detail',${x.id})">
+        ${others.map(x=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border-l);cursor:pointer" onclick="goPage('detail','${x.id}')">
           <span style="font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px"><i class="ti ti-chevron-right" style="font-size:12px;color:var(--text4)"></i>${x.name}</span>
           <span class="badge ${SCLS[x.status]||'b-plan'}">${x.status}</span>
         </div>`).join('')}</div>`:''}
@@ -506,15 +559,15 @@ function renderDetail(id){
   }
   document.getElementById('detail-content').innerHTML=html;
 }
+
 function switchTab(id,tab){activeTab[id]=tab;renderDetail(id);}
 
-let _tt;
-function toast(msg){
-  let el=document.getElementById('_toast');
-  if(!el){el=document.createElement('div');el.id='_toast';Object.assign(el.style,{position:'fixed',bottom:'24px',left:'50%',transform:'translateX(-50%)',background:'#1B2A3B',color:'#fff',padding:'10px 20px',borderRadius:'24px',fontSize:'13px',fontWeight:'500',zIndex:'9999',opacity:'0',transition:'opacity .2s',pointerEvents:'none',whiteSpace:'nowrap',boxShadow:'0 4px 16px rgba(0,0,0,.25)'});document.body.appendChild(el);}
-  el.textContent=msg;el.style.opacity='1';clearTimeout(_tt);_tt=setTimeout(()=>el.style.opacity='0',2500);
-}
-updateApproveBadge();goPage('list');
+const _s=document.createElement('style');
+_s.textContent='@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}';
+document.head.appendChild(_s);
+
+// ── 啟動 ──
+init();
 </script>
 </body>
 </html>
