@@ -274,7 +274,7 @@ tr.row-other td:first-child{border-left:3px solid transparent}
     <button class="nav-link" id="nl-myproj" onclick="goPage('myproj')"><i class="ti ti-folders"></i> 我的專案</button>
     <button class="nav-link" id="nl-review" onclick="goPage('review')"><i class="ti ti-eye-check"></i> 審核日誌</button>
     <span class="role-badge"><i class="ti ti-hard-hat" style="font-size:11px"></i> 工程師</span>
-    <button class="user-pill"><i class="ti ti-user-circle" style="font-size:14px"></i> 王大偉</button>
+    <button class="user-pill" onclick="logout()"><i class="ti ti-user-circle" style="font-size:14px"></i> 王大偉</button>
   </div>
 </nav>
 
@@ -356,8 +356,10 @@ tr.row-other td:first-child{border-left:3px solid transparent}
 // ── 登入守衛 ──
 if (!requireAuth(['engineer'])) { /* 已跳轉 */ }
 const _cu = Auth.getUser();
-if (_cu) document.querySelector('.user-pill').innerHTML =
-  `<i class="ti ti-user-circle" style="font-size:14px"></i> ${_cu.name}`;
+if (_cu) {
+  const pill = document.querySelector('.user-pill');
+  if (pill) pill.innerHTML = `<i class="ti ti-user-circle" style="font-size:14px"></i> ${_cu.name}`;
+}
 
 // ── 狀態 ──
 let PROJECTS  = [];
