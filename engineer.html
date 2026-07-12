@@ -826,7 +826,7 @@ function drawNewProj() {
   }
 
   document.getElementById('modal-area').innerHTML = `
-    <div class="modal-bg" onclick="if(event.target===this)closeModal()">
+    <div class="modal-bg" onclick="void(0)">
       <div class="modal">
         <div class="modal-title"><span><i class="ti ti-plus"></i> 申請新專案</span><button class="btn sm" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
         <div class="step-bar">${bar}</div>
@@ -864,7 +864,7 @@ async function doCreateProj() {
 function openEditProjModal(id) {
   const p = PROJECTS.find(x=>x.id===id); if(!p||!isOwn(p)) return;
   document.getElementById('modal-area').innerHTML = `
-    <div class="modal-bg" onclick="if(event.target===this)closeModal()">
+    <div class="modal-bg" onclick="void(0)">
       <div class="modal">
         <div class="modal-title"><span><i class="ti ti-edit"></i> 編輯專案</span><button class="btn sm" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
         <div class="field"><label>工程名稱 *</label><input id="ep-name" value="${p.name}"></div>
@@ -915,7 +915,7 @@ async function doUpdateProj(id) {
 /* ══ 工項 Modal ══ */
 function openAddTaskModal(projId) {
   document.getElementById('modal-area').innerHTML = `
-    <div class="modal-bg" onclick="if(event.target===this)closeModal()">
+    <div class="modal-bg" onclick="void(0)">
       <div class="modal">
         <div class="modal-title"><span><i class="ti ti-plus"></i> 新增工項</span><button class="btn sm" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
         <div class="field"><label>工項名稱 *</label><input id="at-name" placeholder="例：水電管線配置"></div>
@@ -948,7 +948,7 @@ async function doAddTask(projId) {
 function openEditTaskModal(projId, taskId) {
   const task = (TASKS_CACHE[projId]||[]).find(t=>t.id===taskId); if(!task) return;
   document.getElementById('modal-area').innerHTML = `
-    <div class="modal-bg" onclick="if(event.target===this)closeModal()">
+    <div class="modal-bg" onclick="void(0)">
       <div class="modal">
         <div class="modal-title"><span><i class="ti ti-edit"></i> 編輯工項</span><button class="btn sm" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
         <div class="field"><label>工項名稱 *</label><input id="et-name" value="${task.name}"></div>
@@ -990,7 +990,7 @@ async function openAssignModal(projId) {
   const tasks = TASKS_CACHE[projId] || [];
   const subs  = ALL_USERS.filter(u=>u.role==='subcontractor');
   document.getElementById('modal-area').innerHTML = `
-    <div class="modal-bg" onclick="if(event.target===this)closeModal()">
+    <div class="modal-bg" onclick="void(0)">
       <div class="modal">
         <div class="modal-title"><span><i class="ti ti-link"></i> 指派分包商</span><button class="btn sm" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
         <div class="alert alert-info" style="margin-bottom:16px"><i class="ti ti-info-circle" style="font-size:15px;flex-shrink:0"></i><span>指派後系統產生專屬填報連結，分包商無需登入即可填報。</span></div>
@@ -1030,7 +1030,7 @@ async function doCreateAssign(projId) {
       closeModal();
       const fillUrl = `${window.location.origin}${window.location.pathname.replace('engineer.html','subcontractor.html')}?token=${res.token}`;
       document.getElementById('modal-area').innerHTML = `
-        <div class="modal-bg" onclick="if(event.target===this)closeModal()">
+        <div class="modal-bg" onclick="void(0)">
           <div class="modal">
             <div class="modal-title"><span style="color:var(--green)"><i class="ti ti-check-circle"></i> 連結已產出</span><button class="btn sm" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
             <div class="alert alert-ok"><i class="ti ti-check" style="font-size:15px;flex-shrink:0"></i><span>填報連結已建立，分包商點連結即可直接填報。</span></div>
