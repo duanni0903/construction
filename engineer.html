@@ -798,10 +798,23 @@ async function doReviewLog(id, approved) {
 
 /* ══ 申請新專案 Modal ══ */
 let _npStep = 1;
+let _npData = {name:'', type:'機房新建', loc:'', desc:'', start:'', end:'', budget:'', pri:'正常'};
 
 function openNewProjModal() {
   _npStep = 1;
+  _npData = {name:'', type:'機房新建', loc:'', desc:'', start:'', end:'', budget:'', pri:'正常'};
   drawNewProj();
+}
+
+function saveNpData() {
+  if (document.getElementById('np-name'))    _npData.name   = document.getElementById('np-name').value;
+  if (document.getElementById('np-type'))    _npData.type   = document.getElementById('np-type').value;
+  if (document.getElementById('np-loc'))     _npData.loc    = document.getElementById('np-loc').value;
+  if (document.getElementById('np-desc'))    _npData.desc   = document.getElementById('np-desc').value;
+  if (document.getElementById('np-start'))   _npData.start  = document.getElementById('np-start').value;
+  if (document.getElementById('np-end'))     _npData.end    = document.getElementById('np-end').value;
+  if (document.getElementById('np-budget'))  _npData.budget = document.getElementById('np-budget').value;
+  if (document.getElementById('np-pri'))     _npData.pri    = document.getElementById('np-pri').value;
 }
 
 function drawNewProj() {
@@ -814,25 +827,25 @@ function drawNewProj() {
 
   let c = '';
   if (step===1) {
-    c=`<div class="field"><label>工程名稱 *</label><input id="np-name" placeholder="例：台北南三機房擴建工程"></div>
-       <div class="field-row"><div class="field"><label>工程類型</label><select id="np-type"><option>機房新建</option><option>辦公室裝修</option><option>外牆修繕</option><option>機電工程</option></select></div>
-       <div class="field"><label>所在地</label><input id="np-loc" placeholder="例：台北市信義區"></div></div>
-       <div class="field"><label>工程說明</label><textarea id="np-desc" placeholder="簡要說明工程範圍與需求..."></textarea></div>`;
+    c=`<div class="field"><label>工程名稱 *</label><input id="np-name" placeholder="例：台北南三機房擴建工程" value="${_npData.name}"></div>
+       <div class="field-row"><div class="field"><label>工程類型</label><select id="np-type"><option${_npData.type==='機房新建'?' selected':''}>機房新建</option><option${_npData.type==='辦公室裝修'?' selected':''}>辦公室裝修</option><option${_npData.type==='外牆修繕'?' selected':''}>外牆修繕</option><option${_npData.type==='機電工程'?' selected':''}>機電工程</option></select></div>
+       <div class="field"><label>所在地</label><input id="np-loc" placeholder="例：台北市信義區" value="${_npData.loc}"></div></div>
+       <div class="field"><label>工程說明</label><textarea id="np-desc" placeholder="簡要說明工程範圍與需求...">${_npData.desc}</textarea></div>`;
   } else if (step===2) {
     c=`<div class="field-row">
-         <div class="field"><label>預計開工日</label><input type="date" id="np-start"></div>
-         <div class="field"><label>預定完工日</label><input type="date" id="np-end"></div>
+         <div class="field"><label>預計開工日</label><input type="date" id="np-start" value="${_npData.start}"></div>
+         <div class="field"><label>預定完工日</label><input type="date" id="np-end" value="${_npData.end}"></div>
        </div>
        <div class="field-row">
-         <div class="field"><label>估計預算（元）</label><input type="number" id="np-budget" placeholder="0"></div>
-         <div class="field"><label>優先程度</label><select id="np-pri"><option>正常</option><option>高</option><option>緊急</option></select></div>
+         <div class="field"><label>估計預算（元）</label><input type="number" id="np-budget" placeholder="0" value="${_npData.budget}"></div>
+         <div class="field"><label>優先程度</label><select id="np-pri"><option${_npData.pri==='正常'?' selected':''}>正常</option><option${_npData.pri==='高'?' selected':''}>高</option><option${_npData.pri==='緊急'?' selected':''}>緊急</option></select></div>
        </div>
        <div class="alert alert-info" style="margin-top:4px"><i class="ti ti-info-circle" style="font-size:15px;flex-shrink:0"></i><span>申請送出後將通知主管審核，核准後專案才正式建立。</span></div>`;
   } else {
-    const name = document.getElementById('np-name')?.value||'（未填）';
-    const start= document.getElementById('np-start')?.value||'—';
-    const end  = document.getElementById('np-end')?.value||'—';
-    const bud  = document.getElementById('np-budget')?.value;
+    const name = _npData.name||'（未填）';
+    const start= _npData.start||'—';
+    const end  = _npData.end||'—';
+    const bud  = _npData.budget;
     c=`<div class="alert alert-ok"><i class="ti ti-check-circle" style="font-size:15px;flex-shrink:0"></i><span>確認後申請將送交主管審核。</span></div>
        <div style="background:var(--bg);border-radius:var(--r-sm);padding:14px;font-size:13px;line-height:2.2;border:1px solid var(--border-l)">
          <div style="display:flex;justify-content:space-between"><span style="color:var(--text3)">工程名稱</span><strong>${name}</strong></div>
@@ -850,8 +863,8 @@ function drawNewProj() {
         <div class="step-bar">${bar}</div>
         ${c}
         <div style="display:flex;gap:8px;margin-top:18px;justify-content:space-between">
-          ${step>1 ? `<button class="btn" onclick="_npStep--;drawNewProj()"><i class="ti ti-arrow-left"></i> 上一步</button>` : `<button class="btn danger" onclick="closeModal()">取消</button>`}
-          ${step<3 ? `<button class="btn pri" onclick="_npStep++;drawNewProj()">下一步 <i class="ti ti-arrow-right"></i></button>`
+          ${step>1 ? `<button class="btn" onclick="saveNpData();_npStep--;drawNewProj()"><i class="ti ti-arrow-left"></i> 上一步</button>` : `<button class="btn danger" onclick="closeModal()">取消</button>`}
+          ${step<3 ? `<button class="btn pri" onclick="saveNpData();_npStep++;drawNewProj()">下一步 <i class="ti ti-arrow-right"></i></button>`
                    : `<button class="submit-btn" id="np-submit" onclick="doCreateProj()"><i class="ti ti-send"></i> 送出申請</button>`}
         </div>
       </div>
@@ -859,10 +872,10 @@ function drawNewProj() {
 }
 
 async function doCreateProj() {
-  const name  = document.getElementById('np-name')?.value?.trim();
-  const start = document.getElementById('np-start')?.value;
-  const end   = document.getElementById('np-end')?.value;
-  const budget= document.getElementById('np-budget')?.value;
+  const name  = _npData.name?.trim();
+  const start = _npData.start;
+  const end   = _npData.end;
+  const budget= _npData.budget;
   if (!name) { showToast('請填寫工程名稱','warn'); return; }
   setBtnLoading('np-submit', true);
   try {
