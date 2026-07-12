@@ -69,10 +69,12 @@ function callAPI(params) {
 
 // ── 寫入操作（透過 write action）────────────────────────────────
 function writeAPI(action, data) {
-  return callAPI({
-    action: 'write',
-    data: JSON.stringify({ action, ...data }),
+  // 將所有欄位攤平成 GET 參數，避免 JSON 雙重編碼問題
+  const params = { action: 'write', writeAction: action };
+  Object.entries(data || {}).forEach(([k, v]) => {
+    params[k] = typeof v === 'object' ? JSON.stringify(v) : v;
   });
+  return callAPI(params);
 }
 
 // ── 各功能 API ──────────────────────────────────────────────────
