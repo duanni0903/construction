@@ -394,7 +394,7 @@ const engName= id => (ENG[id]||{}).name || id || '—';
 let filterStatus='全部', filterMgr='', activeTab={}, uploading={}, activeProjId=null, curPage='list';
 
 // ── 初始載入 ──
-async function init() {
+async function init(retry=0) {
   try {
     const [pr, ur] = await Promise.all([API.getProjects(), API.getUsers()]);
     PROJECTS  = pr.success ? pr.projects : [];
@@ -405,7 +405,22 @@ async function init() {
     });
     goPage('list');
   } catch(e) {
-    showToast('載入失敗，請重新整理', 'error');
+    if (retry < 2) {
+      // 自動重試最多 2 次
+      setTimeout(() => init(retry+1), 1500);
+    } else {
+      // 顯示重試按鈕
+      document.getElementById('page-list').innerHTML = `
+        <div style="text-align:center;padding:5rem 2rem">
+          <i class="ti ti-wifi-off" style="font-size:40px;color:var(--text4);display:block;margin-bottom:16px"></i>
+          <div style="font-size:16px;font-weight:600;color:var(--text2);margin-bottom:8px">載入失敗</div>
+          <div style="font-size:13px;color:var(--text4);margin-bottom:20px">無法連線到伺服器，請確認網路後重試</div>
+          <button class="btn pri" onclick="init(0)" style="margin:0 auto">
+            <i class="ti ti-refresh"></i> 重新載入
+          </button>
+        </div>`;
+      document.getElementById('page-list').classList.add('active');
+    }
   }
 }
 
