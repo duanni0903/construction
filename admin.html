@@ -132,38 +132,28 @@ tr:last-child td{border-bottom:none}
 <div class="page" id="page-config"></div>
 <div id="modal-area"></div>
 
+<script src="api.js"></script>
 <script>
-let USERS=[
-  {id:'u1',name:'系統管理員',email:'admin@example.com',   role:'admin',       status:'active', lastLogin:'2025-06-27 10:23'},
-  {id:'u2',name:'陳所長',    email:'director@example.com',role:'manager',     status:'active', lastLogin:'2025-06-27 09:05'},
-  {id:'u3',name:'王大偉',    email:'wang@example.com',    role:'engineer',    status:'active', lastLogin:'2025-06-27 08:55'},
-  {id:'u5',name:'李國豪',    email:'lee@example.com',     role:'engineer',    status:'active', lastLogin:'2025-06-26 17:30'},
-  {id:'u6',name:'張雅婷',    email:'zhang@example.com',   role:'engineer',    status:'active', lastLogin:'2025-06-26 14:22'},
-  {id:'u4',name:'宏鑫泥作',  email:'sub@example.com',     role:'subcontractor',status:'active',lastLogin:'2025-06-27 07:45'},
-  {id:'u7',name:'統合水電',  email:'sub2@example.com',    role:'subcontractor',status:'inactive',lastLogin:'2025-06-10 11:00'},
-];
-const PROJECTS=[
-  {id:1,name:'台北劍潭大樓5樓辦公室改裝',mgr:'u3',status:'施工',    budget:1200000,contract:990000},
-  {id:2,name:'台北東六機房新建工程',      mgr:'u3',status:'規劃設計',budget:0,      contract:0},
-  {id:3,name:'南港展覽館空調系統更新',    mgr:'u5',status:'驗收',    budget:3200000,contract:3100000},
-  {id:4,name:'信義區辦公大樓外牆修繕',    mgr:'u5',status:'工程發包',budget:850000, contract:720000},
-  {id:5,name:'內湖廠房屋頂防水工程',      mgr:'u6',status:'規劃設計',budget:0,      contract:0},
-];
-const LOGS=[
-  {time:'10:23',dot:'#185FA5',msg:'系統管理員 登入系統',detail:'IP: 192.168.1.100'},
-  {time:'09:45',dot:'#0F6E56',msg:'宏鑫泥作 送出施工日誌',detail:'台北劍潭辦公室改裝'},
-  {time:'09:30',dot:'#0F6E56',msg:'陳所長 核准新專案申請',detail:'宜蘭太平機房新建工程'},
-  {time:'09:12',dot:'#185FA5',msg:'王大偉 送出新專案申請',detail:'宜蘭太平機房新建工程'},
-  {time:'08:55',dot:'#185FA5',msg:'王大偉 登入系統',detail:'IP: 192.168.1.105'},
-  {time:'08:45',dot:'#854F0B',msg:'宏鑫泥作 登入填報介面',detail:'Token: abc123...'},
-  {time:'08:30',dot:'#0F6E56',msg:'李國豪 上傳文件',detail:'南港展覽館空調更新 · 測試報告書.pdf'},
-];
+// ── 登入守衛 ──
+if (!requireAuth(['admin'])) { /* 已跳轉 */ }
+const _cu = Auth.getUser();
+if (_cu) document.querySelector('.user-pill').innerHTML =
+  `<i class="ti ti-user-circle" style="font-size:14px"></i> ${_cu.name}`;
+
+// ── 狀態 ──
+let USERS    = [];
+let PROJECTS = [];
+
 const SCLS={規劃設計:'b-plan',工程發包:'b-bid',施工:'b-work',驗收:'b-chk'};
 const ROLE_TAG={admin:'tag-admin',manager:'tag-mgr',engineer:'tag-eng',subcontractor:'tag-sub'};
 const ROLE_LBL={admin:'系統管理員',manager:'主管',engineer:'工程師',subcontractor:'分包商'};
-const AV_CLS={u1:'av-e',u2:'av-a',u3:'av-c',u4:'av-d',u5:'av-e',u6:'av-d',u7:'av-b'};
+const ROLE_VAL_TO_KEY={工程師:'engineer',主管:'manager',分包商:'subcontractor',系統管理員:'admin'};
+const ROLE_KEY_TO_VAL={engineer:'工程師',manager:'主管',subcontractor:'分包商',admin:'系統管理員'};
+const AV_CLS_LIST=['av-a','av-b','av-c','av-d','av-e'];
 const fmt=n=>n?'$'+Number(n).toLocaleString():'—';
+function avCls(id){ const i=parseInt(id.replace(/\D/g,''))||0; return AV_CLS_LIST[i%5]; }
 
+// ── 頁面切換 ──
 function goPage(id){
   ['dash','users','projs','config'].forEach(p=>{
     document.getElementById('page-'+p).classList.toggle('active',p===id);
@@ -171,57 +161,71 @@ function goPage(id){
   });
   const labels={dash:'系統總覽',users:'帳號管理',projs:'所有專案',config:'系統設定'};
   document.getElementById('bc-cur').textContent=labels[id]||id;
-  if(id==='dash')renderDash();
-  if(id==='users')renderUsers();
-  if(id==='projs')renderProjs();
-  if(id==='config')renderConfig();
+  if(id==='dash')   loadDash();
+  if(id==='users')  loadUsers();
+  if(id==='projs')  loadProjs();
+  if(id==='config') renderConfig();
   window.scrollTo(0,0);
+}
+
+// ── 系統總覽 ──
+async function loadDash(){
+  const el=document.getElementById('page-dash');
+  showLoading(true,'page-dash');
+  try {
+    const [ur, pr] = await Promise.all([API.getUsers(), API.getProjects()]);
+    USERS    = ur.success ? ur.users    : [];
+    PROJECTS = pr.success ? pr.projects : [];
+    renderDash();
+  } catch(e){ el.innerHTML=`<div class="empty"><i class="ti ti-wifi-off"></i>載入失敗，請重新整理</div>`; }
 }
 
 function renderDash(){
   const el=document.getElementById('page-dash');
-  const activeUsers=USERS.filter(u=>u.status==='active').length;
-  const totB=PROJECTS.reduce((a,p)=>a+p.budget,0);
+  const activeU=USERS.filter(u=>u.status==='active').length;
+  const totB=PROJECTS.reduce((a,p)=>a+Number(p.budget||0),0);
   el.innerHTML=`
     <div class="page-hd">
-      <div><div class="page-title">系統總覽</div><div class="page-sub">${new Date().toLocaleDateString('zh-TW',{year:'numeric',month:'long',day:'numeric'})} · 系統管理員視角</div></div>
+      <div><div class="page-title">系統總覽</div>
+      <div class="page-sub">${new Date().toLocaleDateString('zh-TW',{year:'numeric',month:'long',day:'numeric'})} · 系統管理員</div></div>
     </div>
     <div class="stats">
       <div class="stat-card"><div class="stat-val">${PROJECTS.length}</div><div class="stat-lbl">工程專案</div><div class="stat-sub">${PROJECTS.filter(p=>p.status==='施工').length} 個施工中</div></div>
-      <div class="stat-card"><div class="stat-val">${USERS.length}</div><div class="stat-lbl">系統使用者</div><div class="stat-sub">${activeUsers} 個啟用中</div></div>
+      <div class="stat-card"><div class="stat-val">${USERS.length}</div><div class="stat-lbl">系統使用者</div><div class="stat-sub">${activeU} 個啟用中</div></div>
       <div class="stat-card"><div class="stat-val" style="font-size:20px">${totB?'$'+Math.round(totB/10000)+'萬':'—'}</div><div class="stat-lbl">專案預算總額</div></div>
-      <div class="stat-card"><div class="stat-val">${LOGS.length}</div><div class="stat-lbl">今日操作紀錄</div><div class="stat-sub">最後更新 10:23</div></div>
+      <div class="stat-card"><div class="stat-val">${PROJECTS.filter(p=>p.applyStatus==='pending').length}</div><div class="stat-lbl">待審核申請</div></div>
     </div>
     <div class="two-col">
       <div class="section-card">
-        <div class="section-hd"><span class="section-title">今日系統操作日誌</span><button class="btn sm" onclick="goPage('config')">查看全部</button></div>
-        ${LOGS.map(l=>`<div class="log-item">
-          <div class="log-time">${l.time}</div>
-          <div class="log-dot" style="background:${l.dot}"></div>
-          <div class="log-body"><div class="log-msg">${l.msg}</div><div class="log-detail">${l.detail}</div></div>
-        </div>`).join('')}
+        <div class="section-hd"><span class="section-title">使用者角色分佈</span></div>
+        ${Object.entries(ROLE_LBL).map(([r,lbl])=>{
+          const cnt=USERS.filter(u=>u.role===r).length;
+          return`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-l)">
+            <span class="badge ${ROLE_TAG[r]}">${lbl}</span>
+            <span style="font-size:14px;font-weight:700">${cnt} 人</span>
+          </div>`;
+        }).join('')}
       </div>
-      <div>
-        <div class="section-card">
-          <div class="section-hd"><span class="section-title">使用者分佈</span></div>
-          ${Object.entries(ROLE_LBL).map(([r,lbl])=>{
-            const cnt=USERS.filter(u=>u.role===r).length;
-            return`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-l)">
-              <span style="display:flex;align-items:center;gap:8px;font-size:13px"><span class="badge ${ROLE_TAG[r]}">${lbl}</span></span>
-              <span style="font-size:14px;font-weight:700;color:var(--text)">${cnt} 人</span>
-            </div>`;
-          }).join('')}
-        </div>
-        <div class="section-card">
-          <div class="section-hd"><span class="section-title">快速操作</span></div>
-          <div style="display:flex;flex-direction:column;gap:8px">
-            <button class="btn" style="justify-content:flex-start" onclick="goPage('users');setTimeout(openAddUserModal,50)"><i class="ti ti-user-plus"></i> 新增使用者帳號</button>
-            <button class="btn" style="justify-content:flex-start" onclick="goPage('projs')"><i class="ti ti-folders"></i> 管理所有專案</button>
-            <button class="btn" style="justify-content:flex-start" onclick="goPage('config')"><i class="ti ti-settings"></i> 系統全域設定</button>
-          </div>
+      <div class="section-card">
+        <div class="section-hd"><span class="section-title">快速操作</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn" style="justify-content:flex-start" onclick="goPage('users');setTimeout(openAddUserModal,80)"><i class="ti ti-user-plus"></i> 新增使用者帳號</button>
+          <button class="btn" style="justify-content:flex-start" onclick="goPage('projs')"><i class="ti ti-folders"></i> 管理所有專案</button>
+          <button class="btn" style="justify-content:flex-start" onclick="goPage('config')"><i class="ti ti-settings"></i> 系統全域設定</button>
+          <button class="btn danger" style="justify-content:flex-start" onclick="logout()"><i class="ti ti-logout"></i> 登出系統</button>
         </div>
       </div>
     </div>`;
+}
+
+// ── 帳號管理 ──
+async function loadUsers(){
+  showLoading(true,'page-users');
+  try {
+    const res = await API.getUsers();
+    USERS = res.success ? res.users : [];
+    renderUsers();
+  } catch(e){ document.getElementById('page-users').innerHTML=`<div class="empty"><i class="ti ti-wifi-off"></i>載入失敗</div>`; }
 }
 
 function renderUsers(){
@@ -234,130 +238,126 @@ function renderUsers(){
     <div class="section-card">
       <div class="section-hd"><span class="section-title">所有使用者（${USERS.length}）</span></div>
       ${USERS.map(u=>`<div class="user-row">
-        <div class="av ${AV_CLS[u.id]||'av-a'}" style="width:38px;height:38px;font-size:15px">${u.name[0]}</div>
+        <div class="av ${avCls(u.id)}" style="width:38px;height:38px;font-size:15px">${u.name[0]}</div>
         <div class="user-info">
           <div class="user-name">${u.name}</div>
-          <div class="user-email">${u.email} · 最後登入：${u.lastLogin}</div>
+          <div class="user-email">${u.email} · 最後登入：${u.lastLogin||'—'}</div>
         </div>
-        <span class="badge ${ROLE_TAG[u.role]}">${ROLE_LBL[u.role]}</span>
+        <span class="badge ${ROLE_TAG[u.role]||'tag-eng'}">${ROLE_LBL[u.role]||u.role}</span>
         <span class="badge ${u.status==='active'?'b-active':'b-inactive'}">${u.status==='active'?'啟用':'停權'}</span>
         <div style="display:flex;gap:5px;flex-shrink:0">
           <button class="btn sm" onclick="openEditUserModal('${u.id}')"><i class="ti ti-edit"></i> 編輯</button>
-          ${u.id!=='u1'?`<button class="btn sm ${u.status==='active'?'warn':'success'}" onclick="toggleUser('${u.id}')"><i class="ti ti-${u.status==='active'?'user-off':'user-check'}"></i>${u.status==='active'?'停權':'復權'}</button>`:''}
-          ${u.id!=='u1'?`<button class="btn sm danger" onclick="confirmDeleteUser('${u.id}')"><i class="ti ti-trash"></i></button>`:''}
+          ${u.id!==_cu.id?`<button class="btn sm ${u.status==='active'?'warn':'success'}" onclick="doToggleUser('${u.id}')">
+            <i class="ti ti-${u.status==='active'?'user-off':'user-check'}"></i>${u.status==='active'?'停權':'復權'}</button>`:''}
+          ${u.id!==_cu.id?`<button class="btn sm danger" onclick="confirmDeleteUser('${u.id}')"><i class="ti ti-trash"></i></button>`:''}
         </div>
       </div>`).join('')}
     </div>`;
 }
 
-function toggleUser(id){
+async function doToggleUser(id){
   const u=USERS.find(x=>x.id===id);if(!u)return;
-  u.status=u.status==='active'?'inactive':'active';
-  toast(`${u.name} 已${u.status==='active'?'復權':'停權'}`);
-  renderUsers();
+  try {
+    const res = await API.toggleUser(id);
+    if(res.success){
+      u.status = res.status;
+      toast(`${u.name} 已${u.status==='active'?'復權':'停權'}`, u.status==='active'?'success':'warn');
+      renderUsers();
+    } else { toast(res.error||'操作失敗','error'); }
+  } catch(e){ toast('連線失敗','error'); }
+}
+
+// ── 所有專案 ──
+async function loadProjs(){
+  showLoading(true,'page-projs');
+  try {
+    const [pr, ur] = await Promise.all([API.getProjects(), API.getUsers()]);
+    PROJECTS = pr.success ? pr.projects : [];
+    USERS    = ur.success ? ur.users    : [];
+    renderProjs();
+  } catch(e){ document.getElementById('page-projs').innerHTML=`<div class="empty"><i class="ti ti-wifi-off"></i>載入失敗</div>`; }
 }
 
 function renderProjs(){
   const el=document.getElementById('page-projs');
-  const totB=PROJECTS.reduce((a,p)=>a+p.budget,0);
-  const ENG={u3:'王大偉',u5:'李國豪',u6:'張雅婷'};
+  const totB=PROJECTS.reduce((a,p)=>a+Number(p.budget||0),0);
+  const engMap={};USERS.forEach(u=>{engMap[u.id]=u.name;});
   el.innerHTML=`
     <div class="page-hd">
       <div><div class="page-title">所有工程專案</div><div class="page-sub">系統管理員擁有所有專案完整 CRUD 權限</div></div>
-      <button class="btn pri" onclick="toast('新增專案')"><i class="ti ti-plus"></i> 新增專案</button>
     </div>
     <div class="stats">
       <div class="stat-card"><div class="stat-val">${PROJECTS.length}</div><div class="stat-lbl">專案總數</div></div>
       <div class="stat-card"><div class="stat-val">${PROJECTS.filter(p=>p.status==='施工').length}</div><div class="stat-lbl">施工中</div></div>
       <div class="stat-card"><div class="stat-val" style="font-size:20px">${totB?'$'+Math.round(totB/10000)+'萬':'—'}</div><div class="stat-lbl">預算總額</div></div>
-      <div class="stat-card"><div class="stat-val">${PROJECTS.filter(p=>p.status==='驗收').length}</div><div class="stat-lbl">驗收中</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:var(--amber)">${PROJECTS.filter(p=>p.applyStatus==='pending').length}</div><div class="stat-lbl">待審核申請</div></div>
     </div>
+    ${!PROJECTS.length?`<div class="section-card"><div class="empty"><i class="ti ti-folder-off"></i>尚無工程專案</div></div>`:`
     <div class="section-card" style="padding:0;overflow:hidden">
       <div class="table-wrap">
         <table>
           <thead><tr>
-            <th style="width:40px">#</th>
-            <th style="min-width:240px">專案名稱</th>
-            <th style="width:90px">負責工程師</th>
+            <th style="min-width:220px">專案名稱</th>
+            <th style="width:90px">負責人</th>
             <th style="width:84px">狀態</th>
-            <th style="width:100px" class="r">預算金額</th>
-            <th style="width:100px" class="r">契約金額</th>
-            <th style="width:120px">操作</th>
+            <th style="width:84px">申請</th>
+            <th style="width:96px" class="r">預算金額</th>
+            <th style="width:96px" class="r">契約金額</th>
+            <th style="width:90px">完工日</th>
+            <th style="width:80px">操作</th>
           </tr></thead>
           <tbody>${PROJECTS.map(p=>`<tr>
-            <td style="color:var(--text4);font-size:12px;font-weight:600">${p.id}</td>
             <td style="font-weight:600">${p.name}</td>
-            <td style="font-size:12px">${ENG[p.mgr]||p.mgr}</td>
+            <td style="font-size:12px">${engMap[p.mgrId]||p.mgrId||'—'}</td>
             <td><span class="badge ${SCLS[p.status]||'b-plan'}">${p.status}</span></td>
+            <td><span class="badge ${p.applyStatus==='approved'?'b-active':p.applyStatus==='pending'?'b-pending':'b-inactive'}">${p.applyStatus==='approved'?'核准':p.applyStatus==='pending'?'待審':'退回'}</span></td>
             <td class="r" style="font-size:12px;font-weight:600">${p.budget?fmt(p.budget):'—'}</td>
             <td class="r" style="font-size:12px">${p.contract?fmt(p.contract):'—'}</td>
-            <td><div style="display:flex;gap:5px">
-              <button class="btn sm" onclick="toast('檢視專案')"><i class="ti ti-eye"></i></button>
-              <button class="btn sm" onclick="toast('編輯專案')"><i class="ti ti-edit"></i></button>
-              <button class="btn sm danger" onclick="toast('刪除專案')"><i class="ti ti-trash"></i></button>
-            </div></td>
+            <td style="font-size:12px">${p.endDate||'—'}</td>
+            <td><button class="btn sm danger" onclick="doDeleteProj('${p.id}')"><i class="ti ti-trash"></i></button></td>
           </tr>`).join('')}</tbody>
         </table>
       </div>
-    </div>`;
+    </div>`}`;
 }
 
+async function doDeleteProj(id){
+  if(!confirm('確定刪除此專案？此操作不可復原。')) return;
+  try {
+    const res = await API.deleteProject(id);
+    if(res.success){ toast('專案已刪除','success'); loadProjs(); }
+    else toast(res.error||'刪除失敗','error');
+  } catch(e){ toast('連線失敗','error'); }
+}
+
+// ── 系統設定（靜態顯示，後續可擴充）──
 function renderConfig(){
-  const el=document.getElementById('page-config');
-  el.innerHTML=`
-    <div class="page-hd">
-      <div><div class="page-title">系統設定</div><div class="page-sub">全域參數設定、Google Sheets 連線、系統操作日誌</div></div>
-    </div>
+  document.getElementById('page-config').innerHTML=`
+    <div class="page-hd"><div><div class="page-title">系統設定</div><div class="page-sub">Google Sheets 後端連線資訊</div></div></div>
     <div class="two-col">
-      <div>
-        <div class="section-card">
-          <div class="section-hd"><span class="section-title">全域系統設定</span></div>
-          ${[
-            {lbl:'工地名稱',desc:'顯示於系統頂部',val:'工程管理系統'},
-            {lbl:'工程專案分類',desc:'可用的工程類型',val:'5 個分類'},
-            {lbl:'工種代碼',desc:'出工統計使用',val:'8 種工種'},
-            {lbl:'Google Sheets 連線',desc:'後端資料庫',val:'✓ 已連線'},
-            {lbl:'Apps Script API',desc:'JSONP 模式',val:'v5 已部署'},
-          ].map(s=>`<div class="setting-item">
-            <div><div class="setting-lbl">${s.lbl}</div><div class="setting-desc">${s.desc}</div></div>
-            <div style="display:flex;align-items:center;gap:8px">
-              <span class="setting-val">${s.val}</span>
-              <button class="btn sm" onclick="toast('編輯：${s.lbl}')"><i class="ti ti-edit"></i></button>
-            </div>
-          </div>`).join('')}
-        </div>
-        <div class="section-card">
-          <div class="section-hd"><span class="section-title">通知設定</span></div>
-          ${[
-            {lbl:'新專案申請通知',desc:'Email 通知主管',val:'啟用'},
-            {lbl:'分包商填報通知',desc:'Email 通知工程師',val:'啟用'},
-            {lbl:'日誌審核結果通知',desc:'Email 通知分包商',val:'啟用'},
-          ].map(s=>`<div class="setting-item">
-            <div><div class="setting-lbl">${s.lbl}</div><div class="setting-desc">${s.desc}</div></div>
-            <div style="display:flex;align-items:center;gap:8px">
-              <span class="badge b-chk">${s.val}</span>
-              <button class="btn sm" onclick="toast('修改通知設定')"><i class="ti ti-edit"></i></button>
-            </div>
-          </div>`).join('')}
-        </div>
+      <div class="section-card">
+        <div class="section-hd"><span class="section-title">後端連線資訊</span></div>
+        ${[
+          {lbl:'後端類型',val:'Google Apps Script'},
+          {lbl:'資料庫',  val:'Google Sheets'},
+          {lbl:'檔案儲存',val:'Google Drive'},
+          {lbl:'連線狀態',val:'✓ 已連線'},
+          {lbl:'API 版本',val:'v6'},
+        ].map(s=>`<div class="setting-item">
+          <div><div class="setting-lbl">${s.lbl}</div></div>
+          <span class="setting-val">${s.val}</span>
+        </div>`).join('')}
       </div>
-      <div>
-        <div class="section-card">
-          <div class="section-hd"><span class="section-title">系統操作日誌</span><button class="btn sm" onclick="toast('匯出日誌')"><i class="ti ti-download"></i> 匯出</button></div>
-          ${LOGS.map(l=>`<div class="log-item">
-            <div class="log-time">${l.time}</div>
-            <div class="log-dot" style="background:${l.dot}"></div>
-            <div class="log-body"><div class="log-msg">${l.msg}</div><div class="log-detail">${l.detail}</div></div>
-          </div>`).join('')}
+      <div class="section-card">
+        <div class="section-hd"><span class="section-title">帳號安全</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn" style="justify-content:flex-start" onclick="openChangePwModal()"><i class="ti ti-key"></i> 修改我的密碼</button>
         </div>
       </div>
     </div>`;
 }
 
-const ROLE_VAL_TO_KEY={工程師:'engineer',主管:'manager',分包商:'subcontractor',系統管理員:'admin'};
-const ROLE_KEY_TO_VAL={engineer:'工程師',manager:'主管',subcontractor:'分包商',admin:'系統管理員'};
-const AV_COLORS=['av-a','av-b','av-c','av-d','av-e'];
-
+// ── Modal 工具 ──
 function userModal(title, fields, onSubmit){
   document.getElementById('modal-area').innerHTML=`
     <div class="modal-bg" onclick="if(event.target===this)closeModal()">
@@ -371,112 +371,131 @@ function userModal(title, fields, onSubmit){
 }
 
 function openAddUserModal(){
-  userModal(
-    '<i class="ti ti-user-plus"></i> 新增帳號',
+  userModal('<i class="ti ti-user-plus"></i> 新增帳號',
     `<div class="field-row">
       <div class="field"><label>姓名 / 公司名稱 *</label><input id="u-name" type="text" placeholder="例：陳大明"></div>
       <div class="field"><label>角色 *</label>
         <select id="u-role"><option>工程師</option><option>主管</option><option>分包商</option><option>系統管理員</option></select>
       </div>
     </div>
-    <div class="field"><label>Email（登入帳號）*</label><input id="u-email" type="email" placeholder="user@example.com"></div>
+    <div class="field"><label>Email *</label><input id="u-email" type="email" placeholder="user@example.com"></div>
     <div class="field-row">
       <div class="field"><label>初始密碼 *</label><input id="u-pw" type="password" placeholder="至少 8 碼"></div>
       <div class="field"><label>確認密碼 *</label><input id="u-pw2" type="password" placeholder="再輸入一次"></div>
     </div>`,
-    () => {
+    async () => {
       const name  = document.getElementById('u-name').value.trim();
       const email = document.getElementById('u-email').value.trim();
       const role  = ROLE_VAL_TO_KEY[document.getElementById('u-role').value];
       const pw    = document.getElementById('u-pw').value;
       const pw2   = document.getElementById('u-pw2').value;
-      if(!name || !email || !pw){ toast('請填寫所有必填欄位'); return; }
-      if(pw !== pw2){ toast('兩次密碼不一致'); return; }
-      if(USERS.find(u=>u.email===email)){ toast('此 Email 已存在'); return; }
-      const newId = 'u'+Date.now();
-      const avCls = AV_COLORS[USERS.length % AV_COLORS.length];
-      USERS.push({id:newId, name, email, role, status:'active', lastLogin:'從未登入', avCls});
-      closeModal();
-      toast(`✓ 帳號「${name}」已建立`);
-      renderUsers();
-      renderDash();
+      if(!name||!email||!pw){ toast('請填寫所有必填欄位','warn'); return; }
+      if(pw!==pw2){ toast('兩次密碼不一致','warn'); return; }
+      setBtnLoading('modal-submit-btn', true);
+      try {
+        const res = await API.createUser({name, email, role, password:pw});
+        if(res.success){ closeModal(); toast(`✓ 帳號「${name}」已建立`,'success'); loadUsers(); }
+        else toast(res.error||'建立失敗','error');
+      } catch(e){ toast('連線失敗','error'); }
+      setBtnLoading('modal-submit-btn', false);
     }
   );
 }
 
 function openEditUserModal(id){
-  const u = USERS.find(x=>x.id===id); if(!u) return;
-  userModal(
-    '<i class="ti ti-edit"></i> 編輯帳號',
+  const u=USERS.find(x=>x.id===id);if(!u)return;
+  userModal('<i class="ti ti-edit"></i> 編輯帳號',
     `<div class="field-row">
-      <div class="field"><label>姓名 / 公司名稱 *</label><input id="e-name" type="text" value="${u.name}"></div>
+      <div class="field"><label>姓名 *</label><input id="e-name" type="text" value="${u.name}"></div>
       <div class="field"><label>角色 *</label>
-        <select id="e-role">
-          ${['工程師','主管','分包商','系統管理員'].map(r=>`<option${ROLE_KEY_TO_VAL[u.role]===r?' selected':''}>${r}</option>`).join('')}
-        </select>
+        <select id="e-role">${['工程師','主管','分包商','系統管理員'].map(r=>`<option${ROLE_KEY_TO_VAL[u.role]===r?' selected':''}>${r}</option>`).join('')}</select>
       </div>
     </div>
-    <div class="field"><label>Email（登入帳號）*</label><input id="e-email" type="email" value="${u.email}"></div>
+    <div class="field"><label>Email *</label><input id="e-email" type="email" value="${u.email}"></div>
     <div class="field-row">
       <div class="field"><label>新密碼（留空不更改）</label><input id="e-pw" type="password" placeholder="留空則不更改"></div>
-      <div class="field"><label>確認新密碼</label><input id="e-pw2" type="password" placeholder="留空則不更改"></div>
-    </div>
-    <div style="font-size:12px;color:var(--text4);margin-top:-6px"><i class="ti ti-info-circle" style="font-size:12px"></i> 帳號狀態：<strong style="color:${u.status==='active'?'var(--green)':'var(--red)'}">${u.status==='active'?'啟用中':'已停權'}</strong>，可於列表切換。</div>`,
-    () => {
+      <div class="field"><label>確認新密碼</label><input id="e-pw2" type="password" placeholder=""></div>
+    </div>`,
+    async () => {
       const name  = document.getElementById('e-name').value.trim();
       const email = document.getElementById('e-email').value.trim();
       const role  = ROLE_VAL_TO_KEY[document.getElementById('e-role').value];
       const pw    = document.getElementById('e-pw').value;
       const pw2   = document.getElementById('e-pw2').value;
-      if(!name || !email){ toast('請填寫所有必填欄位'); return; }
-      if(pw && pw !== pw2){ toast('兩次密碼不一致'); return; }
-      const dup = USERS.find(x=>x.email===email && x.id!==id);
-      if(dup){ toast('此 Email 已被其他帳號使用'); return; }
-      u.name = name; u.email = email; u.role = role;
-      closeModal();
-      toast(`✓ 帳號「${name}」已更新`);
-      renderUsers();
-      renderDash();
+      if(!name||!email){ toast('請填寫必填欄位','warn'); return; }
+      if(pw&&pw!==pw2){ toast('兩次密碼不一致','warn'); return; }
+      setBtnLoading('modal-submit-btn', true);
+      try {
+        const res = await API.updateUser({id, name, email, role, password:pw||undefined});
+        if(res.success){ closeModal(); toast(`✓ 帳號「${name}」已更新`,'success'); loadUsers(); }
+        else toast(res.error||'更新失敗','error');
+      } catch(e){ toast('連線失敗','error'); }
+      setBtnLoading('modal-submit-btn', false);
     }
   );
 }
 
 function confirmDeleteUser(id){
-  const u = USERS.find(x=>x.id===id); if(!u) return;
-  if(u.id==='u1'){ toast('系統管理員帳號不可刪除'); return; }
+  const u=USERS.find(x=>x.id===id);if(!u)return;
   document.getElementById('modal-area').innerHTML=`
     <div class="modal-bg" onclick="if(event.target===this)closeModal()">
       <div class="modal">
-        <div class="modal-title"><span style="color:var(--red)"><i class="ti ti-alert-triangle"></i> 確認刪除帳號</span><button class="btn sm" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+        <div class="modal-title"><span style="color:var(--red)"><i class="ti ti-alert-triangle"></i> 確認刪除帳號</span>
+          <button class="btn sm" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
         <div style="background:var(--red-l);border:1px solid #F7C1C1;border-radius:var(--r-sm);padding:14px;font-size:13px;color:var(--red);margin-bottom:16px;line-height:1.6">
-          確定要刪除帳號「<strong>${u.name}</strong>」（${u.email}）？<br>
-          此操作<strong>無法復原</strong>，帳號資料將永久移除。
+          確定要刪除「<strong>${u.name}</strong>」（${u.email}）？此操作<strong>無法復原</strong>。
         </div>
         <div style="display:flex;gap:8px;justify-content:flex-end">
           <button class="btn" onclick="closeModal()">取消</button>
-          <button class="btn danger" onclick="deleteUser('${id}')" style="background:var(--red);color:#fff;border-color:var(--red)"><i class="ti ti-trash"></i> 確認刪除</button>
+          <button class="btn danger" id="del-btn" onclick="doDeleteUser('${id}')"
+            style="background:var(--red);color:#fff;border-color:var(--red)"><i class="ti ti-trash"></i> 確認刪除</button>
         </div>
       </div>
     </div>`;
 }
 
-function deleteUser(id){
-  const u = USERS.find(x=>x.id===id); if(!u) return;
-  USERS = USERS.filter(x=>x.id!==id);
-  closeModal();
-  toast(`帳號「${u.name}」已刪除`);
-  renderUsers();
-  renderDash();
+async function doDeleteUser(id){
+  setBtnLoading('del-btn', true);
+  try {
+    const res = await API.deleteUser(id);
+    if(res.success){ closeModal(); toast('帳號已刪除','success'); loadUsers(); }
+    else toast(res.error||'刪除失敗','error');
+  } catch(e){ toast('連線失敗','error'); }
 }
 
-function closeModal(){document.getElementById('modal-area').innerHTML='';}
-
-let _tt;
-function toast(msg){
-  let el=document.getElementById('_toast');
-  if(!el){el=document.createElement('div');el.id='_toast';Object.assign(el.style,{position:'fixed',bottom:'24px',left:'50%',transform:'translateX(-50%)',background:'#1B2A3B',color:'#fff',padding:'10px 20px',borderRadius:'24px',fontSize:'13px',fontWeight:'500',zIndex:'9999',opacity:'0',transition:'opacity .2s',pointerEvents:'none',whiteSpace:'nowrap',boxShadow:'0 4px 16px rgba(0,0,0,.25)'});document.body.appendChild(el);}
-  el.textContent=msg;el.style.opacity='1';clearTimeout(_tt);_tt=setTimeout(()=>el.style.opacity='0',2500);
+function openChangePwModal(){
+  userModal('<i class="ti ti-key"></i> 修改密碼',
+    `<div class="field"><label>新密碼 *</label><input id="cp-pw" type="password" placeholder="至少 8 碼"></div>
+     <div class="field"><label>確認新密碼 *</label><input id="cp-pw2" type="password" placeholder="再輸入一次"></div>`,
+    async () => {
+      const pw=document.getElementById('cp-pw').value;
+      const pw2=document.getElementById('cp-pw2').value;
+      if(!pw){ toast('請輸入新密碼','warn'); return; }
+      if(pw!==pw2){ toast('兩次密碼不一致','warn'); return; }
+      setBtnLoading('modal-submit-btn', true);
+      try {
+        const res = await API.changePw(_cu.id, pw);
+        if(res.success){ closeModal(); toast('✓ 密碼已更新，請重新登入','success'); setTimeout(logout,1500); }
+        else toast(res.error||'更新失敗','error');
+      } catch(e){ toast('連線失敗','error'); }
+    }
+  );
 }
+
+function closeModal(){ document.getElementById('modal-area').innerHTML=''; }
+
+function setBtnLoading(id, loading){
+  const btn=document.getElementById(id);if(!btn)return;
+  btn.disabled=loading;
+  btn.innerHTML=loading?'<i class="ti ti-loader" style="animation:spin 1s linear infinite"></i> 處理中...':'<i class="ti ti-check"></i> 確認';
+}
+
+// spin 動畫
+const _s=document.createElement('style');
+_s.textContent='@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}';
+document.head.appendChild(_s);
+
+// ── 啟動 ──
 goPage('dash');
 </script>
 </body>
