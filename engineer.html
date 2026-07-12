@@ -779,9 +779,14 @@ async function doReviewLog(id, approved) {
 }
 
 /* ══ 申請新專案 Modal ══ */
+let _npStep = 1;
 function openNewProjModal() {
-  let step = 1;
-  function draw() {
+  _npStep = 1;
+  drawNewProj();
+}
+function drawNewProj() {
+  let step = _npStep;
+  function draw() { _npStep=step; drawNewProj(); }
     const sb = [{n:1,l:'基本資訊'},{n:2,l:'工期預算'},{n:3,l:'確認送審'}];
     const bar = sb.map((s,i)=>`<div class="step-item" style="${i===sb.length-1?'flex:none':''}">
       <div class="step-dot ${s.n<step?'done':s.n===step?'active':'todo'}">${s.n<step?'✓':s.n}</div>
@@ -824,8 +829,8 @@ function openNewProjModal() {
           <div class="step-bar">${bar}</div>
           ${c}
           <div style="display:flex;gap:8px;margin-top:18px;justify-content:space-between">
-            ${step>1 ? `<button class="btn" onclick="step--;draw()"><i class="ti ti-arrow-left"></i> 上一步</button>` : `<button class="btn danger" onclick="closeModal()">取消</button>`}
-            ${step<3 ? `<button class="btn pri" onclick="step++;draw()">下一步 <i class="ti ti-arrow-right"></i></button>`
+            ${step>1 ? `<button class="btn" onclick="_npStep--;drawNewProj()"><i class="ti ti-arrow-left"></i> 上一步</button>` : `<button class="btn danger" onclick="closeModal()">取消</button>`}
+            ${step<3 ? `<button class="btn pri" onclick="_npStep++;drawNewProj()">下一步 <i class="ti ti-arrow-right"></i></button>`
                      : `<button class="submit-btn" id="np-submit" style="margin:0;flex:1" onclick="doCreateProj()"><i class="ti ti-send"></i> 送出申請</button>`}
           </div>
         </div>
