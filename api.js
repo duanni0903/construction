@@ -49,9 +49,14 @@ async function callAPI(params) {
       redirect: 'follow',
     });
     const text = await res.text();
-    // Apps Script 回傳純 JSON 或 JSONP callback(json)
-    const json = text.replace(/^[^(]+\(/, '').replace(/\);?\s*$/, '');
-    return JSON.parse(json);
+    // Apps Script 回傳 JSONP 格式：callback({...}) 或 callback([...])
+    // 用 regex 去掉 callback 名稱，只取 JSON 部分
+    const match = text.match(/^[\w$]+\(([\s\S]*)\);?\s*$/);
+    if (match) {
+      return JSON.parse(match[1]);
+    }
+    // 嘗試直接解析 JSON
+    return JSON.parse(text);
   } catch(e) {
     // fetch 失敗則 fallback 到 JSONP
     return jsonpCall(url);
