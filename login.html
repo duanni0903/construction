@@ -93,17 +93,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans
 <div class="footer">© 2025 工程管理系統 · Demo 版本</div>
 <script src="api.js"></script>
 <script>
-// 已登入則直接跳轉
-if (Auth.isLoggedIn()) redirectByRole(Auth.getUser().role);
-
 const ROLE_FILE = {
   admin:'admin.html', manager:'manager.html',
   engineer:'engineer.html', subcontractor:'subcontractor.html'
 };
 
+const DEMO = {
+  admin:         { email:'admin@example.com',    pw:'admin123' },
+  manager:       { email:'director@example.com', pw:'dir123'   },
+  engineer:      { email:'wang@example.com',     pw:'eng123'   },
+  subcontractor: { email:'sub@example.com',      pw:'sub123'   },
+};
+
 function redirectByRole(role) {
   window.location.href = ROLE_FILE[role] || 'login.html';
 }
+
+// 已登入則直接跳轉
+if (Auth.isLoggedIn()) redirectByRole(Auth.getUser().role);
 
 async function doLogin() {
   const email = document.getElementById('email').value.trim();
@@ -136,13 +143,7 @@ async function doLogin() {
   }
 }
 
-// Demo 快速登入（仍保留，直接帶入帳密）
-const DEMO = {
-  admin:         { email:'admin@example.com',    pw:'admin123' },
-  manager:       { email:'director@example.com', pw:'dir123'   },
-  engineer:      { email:'wang@example.com',     pw:'eng123'   },
-  subcontractor: { email:'sub@example.com',      pw:'sub123'   },
-};
+// Demo 快速登入（帳密已定義於上方 DEMO 物件）
 function quickLogin(role) {
   const d = DEMO[role];
   document.getElementById('email').value = d.email;
