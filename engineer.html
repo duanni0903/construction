@@ -539,6 +539,7 @@ function renderTable() {
           <span class="name-text">${p.name}</span>
           ${own ? `<span class="mine-tag"><i class="ti ti-user" style="font-size:9px"></i> 我的</span>`
                 : `<span class="readonly-tag"><i class="ti ti-eye" style="font-size:9px"></i> 唯讀</span>`}
+          ${p.applyStatus==='pending' ? `<span style="font-size:10px;padding:2px 7px;border-radius:20px;background:var(--amber-l);color:var(--amber);border:1px solid #FAC775;flex-shrink:0"><i class="ti ti-clock" style="font-size:9px"></i> 待審核</span>` : ''}
         </div>
       </td>
       <td>
