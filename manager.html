@@ -348,7 +348,7 @@ function renderFilters(){
     `<div class="filter-sep"></div><span class="filter-label">負責人</span>`+
     Object.entries(ENG).filter(([,e])=>e.role==='engineer').map(([id,e])=>
       `<button class="chip${filterMgr===id?' mgr-active':''}" onclick="setMgr('${id}')" style="display:flex;align-items:center;gap:4px">
-        <div class="av ${e.cls}" style="width:16px;height:16px;font-size:7px">${e.name[0]}</div>${e.name.slice(0,3)}
+        <div class="av ${e.cls}" style="width:16px;height:16px;font-size:7px">${e.name[0]}</div>${e.name}
       </button>`).join('');
   const mb=document.getElementById('mgr-bar');
   if(filterMgr&&ENG[filterMgr]){
@@ -383,9 +383,9 @@ function renderTable(){
         <span class="name-text">${p.name}</span>
         ${p.applyStatus==='pending'?`<span class="badge b-pending" style="font-size:10px">待審核</span>`:''}
       </div></td>
-      <td><div class="mgr-chip${filterMgr===p.mgrId?' hl':''}" onclick="clickMgr('${p.mgrId}',event)">
-        <div class="av ${e.cls||'av-a'}" style="width:22px;height:22px;font-size:9px">${(e.name||'?')[0]}</div>
-        <span style="font-size:12px;font-weight:500">${(e.name||'').slice(0,3)}</span>
+      <td><div class="mgr-chip${filterMgr===p.mgrId?' hl':''}" onclick="clickMgr('${p.mgrId}',event)" title="點擊篩選 ${p.mgrName||''} 的專案">
+        <div class="av ${e.cls||'av-a'}" style="width:22px;height:22px;font-size:9px">${(p.mgrName||'?')[0]}</div>
+        <span style="font-size:12px;font-weight:500">${p.mgrName||'—'}</span>
       </div></td>
       <td><span class="badge ${SCLS[p.status]||'b-plan'}">${p.status}</span></td>
       <td>${nw?`<span style="color:var(--text4);font-size:12px">—</span>`:`<div class="prog-cell"><div class="prog-track"><div class="prog-fill" style="width:${p.planPct}%;background:var(--text4)"></div></div><span class="prog-num">${p.planPct}%</span></div>`}</td>
