@@ -480,22 +480,29 @@ function renderAlerts() {
 
 function renderFilters() {
   const sts = ['全部','規劃設計','工程發包','施工','驗收'];
-  const mgrChips = Object.entries(ENG).map(([id,e]) =>
-    `<button class="chip${filterMgr===id?' mgr-active':''}" onclick="setMgr('${id}')" style="display:flex;align-items:center;gap:4px">
-      <div class="av ${e.cls}" style="width:16px;height:16px;font-size:7px">${e.name[0]}</div>${e.name}
-    </button>`).join('');
+  const mgrMap = {};
+  PROJECTS.forEach(p => { if(p.mgrId && p.mgrName) mgrMap[p.mgrId] = p.mgrName; });
+  const mgrChips = Object.entries(mgrMap).map(([id,name]) => {
+    const cls = (ENG[id]||{}).cls || 'av-a';
   document.getElementById('filter-bar').innerHTML =
     `<span class="filter-label">狀態</span>`+
     sts.map(s=>`<button class="chip${filterStatus===s?' active':''}" onclick="setSts('${s}')">${s}</button>`).join('')+
     `<div class="filter-sep"></div><span class="filter-label">負責人</span>`+mgrChips;
   const mb = document.getElementById('mgr-bar');
-  if (filterMgr && ENG[filterMgr]) {
-    const e = ENG[filterMgr]; mb.classList.add('show');
+  if (filterMgr) {
+    const mgrProjs = PROJECTS.filter(p=>p.mgrId===filterMgr);
+    const mgrName  = (mgrProjs[0]||{}).mgrName || filterMgr;
+    const cls      = (ENG[filterMgr]||{}).cls || 'av-a';
+    const totContract = mgrProjs.reduce((a,p)=>a+Number(p.contract||0),0);
+    const totBudget   = mgrProjs.reduce((a,p)=>a+Number(p.budget||0),0);
+    mb.classList.add('show');
     const av = document.getElementById('mgr-bar-av');
-    av.textContent = e.name[0]; av.className = 'av '+e.cls;
+    av.textContent = mgrName[0]; av.className = 'av '+cls;
     av.style.cssText = 'width:24px;height:24px;font-size:11px';
-    document.getElementById('mgr-bar-lbl').textContent =
-      `篩選中：${e.name} 負責的專案（共 ${PROJECTS.filter(p=>p.mgrId===filterMgr).length} 個）`;
+    document.getElementById('mgr-bar-lbl').innerHTML =
+      `<strong>${mgrName}</strong> 負責專案：<strong>${mgrProjs.length} 個</strong>
+       &nbsp;·&nbsp; 預算總額：<strong>${totBudget?'$'+Math.round(totBudget/10000)+'萬':'—'}</strong>
+       &nbsp;·&nbsp; 契約總額：<strong>${totContract?'$'+Math.round(totContract/10000)+'萬':'—'}</strong>`;
   } else { mb.classList.remove('show'); }
   document.getElementById('legend').innerHTML = `
     <div class="legend-item"><div style="width:3px;height:16px;background:var(--teal);border-radius:2px"></div><span>我負責（可編輯）</span></div>
