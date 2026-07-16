@@ -250,6 +250,7 @@ let ENG       = {};
 let PENDING   = [];
 let TASKS_CACHE = {};
 let FILES_CACHE = {};
+let REPORTS_CACHE = {};
 
 const SCLS={規劃設計:'b-plan',工程發包:'b-bid',施工:'b-work',驗收:'b-chk'};
 const TCOL={done:'#0F6E56',doing:'#185FA5',todo:'#A0AEC0'};
@@ -459,7 +460,7 @@ async function renderDetail(id){
   const rem=remain(p);
   const dur=p.duration||(p.startDate&&p.endDate?Math.round((new Date(p.endDate)-new Date(p.startDate))/864e5):null);
   const nw=noWork(p);
-  const tab=activeTab[id]||'tasks';
+  const tab=activeTab[id]||'report';
 
   // 載入工項
   if(!TASKS_CACHE[id]){
@@ -506,6 +507,7 @@ async function renderDetail(id){
     </div>`:'';
 
   const tabs=[
+    {k:'report',l:'工作報告',i:'ti-clipboard-text'},
     {k:'tasks',l:'工項任務',i:'ti-checklist'},
     {k:'files',l:'契約文件',i:'ti-files'},
     {k:'budget',l:'預算資訊',i:'ti-report-money'},
@@ -554,6 +556,39 @@ async function renderDetail(id){
         <div class="big-bar"><div class="big-fill" style="width:${Math.round(p.contract/p.budget*100)}%;background:var(--blue)"></div></div>
       </div>`:''}
     </div>`:`<div class="section-card"><div class="empty"><i class="ti ti-report-money"></i>尚未填入預算資料</div></div>`;
+  } else if(tab==='report'){
+    if(!REPORTS_CACHE) REPORTS_CACHE={};
+    if(!REPORTS_CACHE[id]){
+      const res=await callAPI({action:'getReports',projectId:id});
+      REPORTS_CACHE[id]=res.success?res.reports:[];
+    }
+    const rpt=REPORTS_CACHE[id][0]||null;
+    if(!rpt){
+      html=`<div class="section-card"><div class="empty"><i class="ti ti-clipboard-text"></i>尚無工作報告</div></div>`;
+    } else {
+      const progRows=(rpt.progress||[]).map(pg=>`
+        <tr><td style="white-space:nowrap;color:var(--text3)">${pg.date}</td>
+        <td style="white-space:pre-wrap;line-height:1.6">${pg.note}</td></tr>`).join('');
+      html=`<div class="section-card">
+        <div class="section-hd"><span class="section-title">工作報告</span>
+          <button class="btn sm" onclick="exportMgrPDF('${id}')"><i class="ti ti-file-type-pdf"></i> 匯出 PDF</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:14px">
+          ${[['案件編號',rpt.caseNo],['供應商',rpt.vendor],['交辦來源',rpt.source],['週期',rpt.period],
+             ['案件狀態',rpt.status],['持續追蹤',rpt.tracking],['DRI',rpt.dri],['經辦單位',rpt.unit]]
+            .map(([l,v])=>`<div style="background:var(--bg);border-radius:var(--r-sm);padding:10px;border:1px solid var(--border-l)"><div style="font-size:11px;color:var(--text3);margin-bottom:4px">${l}</div><div style="font-size:13px;font-weight:500">${v||'—'}</div></div>`).join('')}
+        </div>
+        <div style="margin-bottom:12px"><div class="section-title" style="margin-bottom:8px">需求說明</div>
+          <div style="white-space:pre-wrap;font-size:13px;line-height:1.6;padding:10px;background:var(--bg);border-radius:var(--r-sm)">${rpt.requirement||'—'}</div></div>
+        <div style="margin-bottom:12px"><div class="section-title" style="margin-bottom:8px">進度說明</div>
+          <table style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead><tr><th style="width:100px;padding:8px;border:1px solid var(--border);background:var(--bg)">日期</th><th style="padding:8px;border:1px solid var(--border);background:var(--bg)">說明</th></tr></thead>
+            <tbody>${progRows||'<tr><td colspan="2" style="padding:8px;border:1px solid var(--border);color:var(--text4);text-align:center">尚無進度記錄</td></tr>'}</tbody>
+          </table></div>
+        <div><div class="section-title" style="margin-bottom:8px">待處置事項</div>
+          <div style="white-space:pre-wrap;font-size:13px;line-height:1.6;padding:10px;background:var(--bg);border-radius:var(--r-sm)">${rpt.pending||'—'}</div></div>
+      </div>`;
+    }
   } else if(tab==='engineer'){
     const others=PROJECTS.filter(x=>x.mgrId===p.mgrId&&x.id!==p.id);
     html=`<div class="section-card">
@@ -571,6 +606,27 @@ async function renderDetail(id){
     </div>`;
   }
   document.getElementById('detail-content').innerHTML=html;
+}
+
+function exportMgrPDF(projId) {
+  const rpt = (REPORTS_CACHE[projId]||[])[0];
+  const p   = PROJECTS.find(x=>x.id===projId);
+  if (!rpt || !p) return;
+  const progRows = (rpt.progress||[]).map(pg=>`<tr><td>${pg.date}</td><td style="white-space:pre-wrap">${pg.note}</td></tr>`).join('');
+  const html=`<!DOCTYPE html><html lang="zh-TW"><head><meta charset="UTF-8"><title>工作報告</title>
+  <style>body{font-family:'Noto Sans TC',sans-serif;font-size:13px;margin:20px}
+  table{width:100%;border-collapse:collapse;margin-bottom:14px}
+  th,td{border:1px solid #DDE1E9;padding:8px 12px}th{background:#F2F4F7;font-weight:600;width:100px}</style></head><body>
+  <h2 style="margin-bottom:16px">工作報告 — ${p.name}</h2>
+  <table>
+    <tr><th>案件編號</th><td>${rpt.caseNo||'—'}</td><th>供應商</th><td>${rpt.vendor||'—'}</td></tr>
+    <tr><th>案件狀態</th><td>${rpt.status||'—'}</td><th>DRI</th><td>${rpt.dri||'—'}</td></tr>
+  </table>
+  <h4>需求說明</h4><table><tr><td style="white-space:pre-wrap">${rpt.requirement||'—'}</td></tr></table>
+  <h4>進度說明</h4><table><tr><th>日期</th><th>說明</th></tr>${progRows||'<tr><td colspan="2">—</td></tr>'}</table>
+  <h4>待處置事項</h4><table><tr><td style="white-space:pre-wrap">${rpt.pending||'—'}</td></tr></table>
+  </body></html>`;
+  const win=window.open('','_blank');win.document.write(html);win.document.close();setTimeout(()=>win.print(),500);
 }
 
 function switchTab(id,tab){activeTab[id]=tab;renderDetail(id);}
