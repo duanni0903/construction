@@ -427,7 +427,7 @@ function renderApprove(){
       <div class="av ${e.cls||'av-a'}" style="width:40px;height:40px;font-size:16px;flex-shrink:0">${(e.name||'?')[0]}</div>
       <div class="approval-info">
         <div class="approval-name">${p.name}</div>
-        <div class="approval-meta">申請人：${e.name||p.mgrId} · ${p.createdAt||''} · 預算：${p.budget?fmt(p.budget):'未填'}</div>
+        <div class="approval-meta">申請人：${p.mgrName||e.name||p.mgrId} · ${(p.createdAt||'').slice(0,10)} · 預算：${p.budget?fmt(p.budget):'未填'}</div>
         <div class="approval-note">專案申請狀態：等待主管審核</div>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;align-items:flex-end">
