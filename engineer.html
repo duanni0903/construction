@@ -274,7 +274,7 @@ tr.row-other td:first-child{border-left:3px solid transparent}
     <button class="nav-link" id="nl-myproj" onclick="goPage('myproj')"><i class="ti ti-folders"></i> 我的專案</button>
     <button class="nav-link" id="nl-review" onclick="goPage('review')"><i class="ti ti-eye-check"></i> 審核日誌</button>
     <span class="role-badge"><i class="ti ti-hard-hat" style="font-size:11px"></i> 工程師</span>
-    <button class="user-pill"><i class="ti ti-user-circle" style="font-size:14px"></i> 王大偉</button>
+    <button class="user-pill" onclick="logout()"><i class="ti ti-user-circle" style="font-size:14px"></i> <span id="user-display-name">載入中</span></button>
       <button class="nav-link" onclick="logout()" style="border:1px solid rgba(255,255,255,.2);padding:5px 12px"><i class="ti ti-logout"></i> 登出</button>
   </div>
 </nav>
@@ -358,8 +358,8 @@ tr.row-other td:first-child{border-left:3px solid transparent}
 if (!requireAuth(['engineer'])) { /* 已跳轉 */ }
 const _cu = Auth.getUser();
 if (_cu) {
-  const pill = document.querySelector('.user-pill');
-  if (pill) pill.innerHTML = `<i class="ti ti-user-circle" style="font-size:14px"></i> ${_cu.name}`;
+  const nameEl = document.getElementById('user-display-name');
+  if (nameEl) nameEl.textContent = _cu.name;
 }
 
 // ── 狀態 ──
@@ -484,29 +484,31 @@ function renderFilters() {
   PROJECTS.forEach(p => { if(p.mgrId && p.mgrName) mgrMap[p.mgrId] = p.mgrName; });
   const mgrChips = Object.entries(mgrMap).map(([id,name]) => {
     const cls = (ENG[id]||{}).cls || 'av-a';
+    return '<button class="chip'+(filterMgr===id?' mgr-active':'')+'" onclick="setMgr(\'' + id + '\')" style="display:flex;align-items:center;gap:4px"><div class="av '+cls+'" style="width:16px;height:16px;font-size:7px">'+name[0]+'</div>'+name+'</button>';
+  }).join('');
   document.getElementById('filter-bar').innerHTML =
-    `<span class="filter-label">狀態</span>`+
-    sts.map(s=>`<button class="chip${filterStatus===s?' active':''}" onclick="setSts('${s}')">${s}</button>`).join('')+
-    `<div class="filter-sep"></div><span class="filter-label">負責人</span>`+mgrChips;
+    '<span class="filter-label">狀態</span>'+
+    sts.map(s=>'<button class="chip'+(filterStatus===s?' active':'')+'" onclick="setSts(\'' + s + '\')">'+s+'</button>').join('')+
+    '<div class="filter-sep"></div><span class="filter-label">負責人</span>'+mgrChips;
   const mb = document.getElementById('mgr-bar');
   if (filterMgr) {
     const mgrProjs = PROJECTS.filter(p=>p.mgrId===filterMgr);
     const mgrName  = (mgrProjs[0]||{}).mgrName || filterMgr;
     const cls      = (ENG[filterMgr]||{}).cls || 'av-a';
-    const totContract = mgrProjs.reduce((a,p)=>a+Number(p.contract||0),0);
-    const totBudget   = mgrProjs.reduce((a,p)=>a+Number(p.budget||0),0);
+    const totC = mgrProjs.reduce((a,p)=>a+Number(p.contract||0),0);
+    const totB = mgrProjs.reduce((a,p)=>a+Number(p.budget||0),0);
     mb.classList.add('show');
     const av = document.getElementById('mgr-bar-av');
     av.textContent = mgrName[0]; av.className = 'av '+cls;
     av.style.cssText = 'width:24px;height:24px;font-size:11px';
     document.getElementById('mgr-bar-lbl').innerHTML =
-      `<strong>${mgrName}</strong> 負責專案：<strong>${mgrProjs.length} 個</strong>
-       &nbsp;·&nbsp; 預算總額：<strong>${totBudget?'$'+Math.round(totBudget/10000)+'萬':'—'}</strong>
-       &nbsp;·&nbsp; 契約總額：<strong>${totContract?'$'+Math.round(totContract/10000)+'萬':'—'}</strong>`;
+      '<strong>'+mgrName+'</strong> 負責專案：<strong>'+mgrProjs.length+' 個</strong>' +
+      ' &nbsp;·&nbsp; 預算總額：<strong>'+(totB?'$'+Math.round(totB/10000)+'萬':'—')+'</strong>' +
+      ' &nbsp;·&nbsp; 契約總額：<strong>'+(totC?'$'+Math.round(totC/10000)+'萬':'—')+'</strong>';
   } else { mb.classList.remove('show'); }
-  document.getElementById('legend').innerHTML = `
-    <div class="legend-item"><div style="width:3px;height:16px;background:var(--teal);border-radius:2px"></div><span>我負責（可編輯）</span></div>
-    <div class="legend-item"><div style="width:3px;height:16px;background:var(--border);border-radius:2px"></div><span>他人負責（唯讀）</span></div>`;
+  document.getElementById('legend').innerHTML =
+    '<div class="legend-item"><div style="width:3px;height:16px;background:var(--teal);border-radius:2px"></div><span>我負責（可編輯）</span></div>' +
+    '<div class="legend-item"><div style="width:3px;height:16px;background:var(--border);border-radius:2px"></div><span>他人負責（唯讀）</span></div>';
 }
 
 function setSts(s) { filterStatus=s; renderFilters(); renderTable(); }
