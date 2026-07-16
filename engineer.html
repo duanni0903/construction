@@ -610,7 +610,7 @@ async function renderDetailPage(id) {
             <button class="btn ghost" onclick="openEditProjModal('${p.id}')"><i class="ti ti-edit"></i> 編輯</button>
             <button class="btn ghost" style="background:rgba(255,255,255,.12)" onclick="openAssignModal('${p.id}')"><i class="ti ti-link"></i> 指派分包商</button>
             ${p.applyStatus==='pending'?`<button class="btn ghost" style="border-color:rgba(250,199,117,.5);color:#FAC775" onclick="doWithdrawProj('${p.id}')"><i class="ti ti-arrow-back-up"></i> 抽回申請</button>`:''}
-            ${p.applyStatus==='draft'?`<button class="btn ghost" style="background:rgba(255,255,255,.12)" onclick="doReSendProj('${p.id}')"><i class="ti ti-send"></i> 重新送審</button>`:''}`` : ''}
+            ${p.applyStatus==='draft'?`<button class="btn ghost" style="background:rgba(255,255,255,.12)" onclick="doReSendProj('${p.id}')"><i class="ti ti-send"></i> 重新送審</button>`:''}` : ''}
         </div>
       </div>
       <div class="date-strip">
