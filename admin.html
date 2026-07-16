@@ -193,7 +193,7 @@ function renderDash(){
     <div class="stats">
       <div class="stat-card"><div class="stat-val">${PROJECTS.length}</div><div class="stat-lbl">工程專案</div><div class="stat-sub">${PROJECTS.filter(p=>p.status==='施工').length} 個施工中</div></div>
       <div class="stat-card"><div class="stat-val">${USERS.length}</div><div class="stat-lbl">系統使用者</div><div class="stat-sub">${activeU} 個啟用中</div></div>
-      <div class="stat-card"><div class="stat-val" style="font-size:20px">${totB?'$'+Math.round(totB/10000)+'萬':'—'}</div><div class="stat-lbl">專案預算總額</div></div>
+      <div class="stat-card"><div class="stat-val" style="font-size:20px">${totB?fmt(totB):'—'}</div><div class="stat-lbl">專案預算總額</div></div>
       <div class="stat-card"><div class="stat-val">${PROJECTS.filter(p=>p.applyStatus==='pending').length}</div><div class="stat-lbl">待審核申請</div></div>
     </div>
     <div class="two-col">
