@@ -106,7 +106,9 @@ const DEMO = {
 };
 
 function redirectByRole(role) {
-  window.location.href = ROLE_FILE[role] || 'login.html';
+  const file = ROLE_FILE[role] || 'login.html';
+  // 加時間戳繞過快取
+  window.location.href = file + '?t=' + Date.now();
 }
 
 // 已登入則直接跳轉
