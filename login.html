@@ -126,6 +126,7 @@ async function doLogin() {
   try {
     const res = await API.login(email, pw);
     if (res.success) {
+      Auth.clear(); // 先清除舊 session
       Auth.save(res.token, res.user);
       errEl.style.display = 'none';
       redirectByRole(res.user.role);
