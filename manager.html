@@ -336,8 +336,8 @@ function renderStats(){
   document.getElementById('stats').innerHTML=`
     <div class="stat-card"><div class="stat-val">${PROJECTS.length}</div><div class="stat-lbl">專案總數</div><div class="stat-sub">${PROJECTS.filter(p=>p.status==='施工').length} 個施工中</div></div>
     <div class="stat-card"><div class="stat-val" style="color:${PENDING.length>0?'var(--amber)':'inherit'}">${PENDING.length}</div><div class="stat-lbl">待審核申請</div><div class="stat-sub" style="color:${PENDING.length>0?'var(--amber)':'var(--text4)'}">${PENDING.length>0?'需你審核':''}</div></div>
-    <div class="stat-card"><div class="stat-val" style="font-size:20px">${totB?'$'+Math.round(totB/10000)+'萬':'—'}</div><div class="stat-lbl">預算總額</div></div>
-    <div class="stat-card"><div class="stat-val" style="font-size:20px;color:${totR<0?'var(--red)':'inherit'}">${totB?'$'+Math.round(totR/10000)+'萬':'—'}</div><div class="stat-lbl">剩餘預算</div></div>`;
+    <div class="stat-card"><div class="stat-val" style="font-size:20px">${totB?fmt(totB):'—'}</div><div class="stat-lbl">預算總額</div></div>
+    <div class="stat-card"><div class="stat-val" style="font-size:20px;color:${totR<0?'var(--red)':'inherit'}">${totB?fmt(totR):'—'}</div><div class="stat-lbl">剩餘預算</div></div>`;
 }
 
 function renderFilters(){
