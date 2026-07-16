@@ -138,7 +138,7 @@ tr.row-other td:first-child{border-left:3px solid transparent}
 .readonly-hero-banner{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:var(--r-sm);padding:10px 14px;display:flex;align-items:center;gap:8px;font-size:13px;color:rgba(255,255,255,.75);margin-top:14px}
 
 /* ── 指標列 ── */
-.metrics-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.metrics-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
 .metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:13px 16px}
 .metric-lbl{font-size:11px;color:var(--text3);font-weight:500;margin-bottom:5px;letter-spacing:.03em;text-transform:uppercase}
 .metric-val{font-size:20px;font-weight:700;color:var(--text);line-height:1}
@@ -624,7 +624,8 @@ async function renderDetailPage(id) {
   document.getElementById('detail-metrics').innerHTML = `
     <div class="metric"><div class="metric-lbl">工項進度</div><div class="metric-val">${avg}%</div></div>
     <div class="metric"><div class="metric-lbl">完成 / 進行 / 待辦</div><div class="metric-val" style="font-size:18px">${done}<span style="color:var(--text4);font-size:14px"> / ${doing} / ${tasks.length-done-doing}</span></div></div>
-    <div class="metric"><div class="metric-lbl">預算金額</div><div class="metric-val" style="font-size:18px">${p.budget?fmt(p.budget):'—'}</div></div>
+    <div class="metric"><div class="metric-lbl">預算金額</div><div class="metric-val" style="font-size:${p.budget>=1e8?'14px':p.budget>=1e7?'16px':'18px'}">${p.budget?fmt(p.budget):'—'}</div></div>
+    <div class="metric"><div class="metric-lbl">契約金額</div><div class="metric-val" style="font-size:${p.contract>=1e8?'14px':p.contract>=1e7?'16px':'18px'}">${p.contract?fmt(p.contract):'—'}</div></div>
     <div class="metric"><div class="metric-lbl">剩餘預算</div><div class="metric-val" style="font-size:18px;color:${rem!==null&&rem<0?'var(--red)':'inherit'}">${rem!==null?fmt(rem):'—'}</div></div>`;
 
   document.getElementById('detail-prog-bar').innerHTML = !nw ? `
