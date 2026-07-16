@@ -482,7 +482,7 @@ function renderFilters() {
   const sts = ['全部','規劃設計','工程發包','施工','驗收'];
   const mgrChips = Object.entries(ENG).map(([id,e]) =>
     `<button class="chip${filterMgr===id?' mgr-active':''}" onclick="setMgr('${id}')" style="display:flex;align-items:center;gap:4px">
-      <div class="av ${e.cls}" style="width:16px;height:16px;font-size:7px">${e.name[0]}</div>${e.name.slice(0,3)}
+      <div class="av ${e.cls}" style="width:16px;height:16px;font-size:7px">${e.name[0]}</div>${e.name}
     </button>`).join('');
   document.getElementById('filter-bar').innerHTML =
     `<span class="filter-label">狀態</span>`+
@@ -533,9 +533,9 @@ function renderTable() {
         </div>
       </td>
       <td>
-        <div class="mgr-chip${filterMgr===p.mgrId?' hl':''}" onclick="clickMgr('${p.mgrId}',event)">
-          <div class="av ${e.cls||'av-a'}" style="width:22px;height:22px;font-size:9px">${(e.name||'?')[0]}</div>
-          <span style="font-size:12px;font-weight:500">${(e.name||'').slice(0,3)}</span>
+        <div class="mgr-chip${filterMgr===p.mgrId?' hl':''}" onclick="clickMgr('${p.mgrId}',event)" title="點擊篩選 ${p.mgrName||''} 的專案">
+          <div class="av ${e.cls||'av-a'}" style="width:22px;height:22px;font-size:9px">${(p.mgrName||'?')[0]}</div>
+          <span style="font-size:12px;font-weight:500">${p.mgrName||'—'}</span>
         </div>
       </td>
       <td><span class="badge ${SCLS[p.status]||'b-plan'}">${p.status}</span></td>
