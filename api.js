@@ -51,7 +51,7 @@ async function callAPI(params) {
     const text = await res.text();
     // Apps Script 回傳 JSONP 格式：callback({...}) 或 callback([...])
     // 用 regex 去掉 callback 名稱，只取 JSON 部分
-    const match = text.match(/^[\w$]+\(([\s\S]*)\);?\s*$/);
+        const match = text.match(/^[\w$]+\(([\s\S]+)\);?\s*$/);
     if (match) {
       return JSON.parse(match[1]);
     }
@@ -129,6 +129,8 @@ const API = {
   deleteProject: (id)   => writeAPI('deleteProject', { id }),
   approveProject: (id, approved) =>
     writeAPI('approveProject', { id, approved }),
+  withdrawProject: (id) =>
+    writeAPI('withdrawProject', { id }),
 
   // 工項
   getTasks: (projectId) =>
