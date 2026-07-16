@@ -102,11 +102,39 @@ function writeAPI(action, data) {
   return callAPI(params);
 }
 
+// ── POST 上傳（用於大檔案，繞過 URL 長度限制）────────────────────
+async function postAPI(data) {
+  const url = API_URL;
+  if (Auth.getToken() && !data.token) {
+    data.token = Auth.getToken();
+  }
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+      redirect: 'follow',
+    });
+    const text = await res.text();
+    const match = text.match(/^[\w$]+\(([\s\S]+)\);?\s*$/);
+    if (match) return JSON.parse(match[1]);
+    return JSON.parse(text);
+  } catch(e) {
+    throw new Error('POST API 失敗: ' + e.message);
+  }
+}
+
 // ── 各功能 API ──────────────────────────────────────────────────
 const API = {
   // 登入
   login: (email, password) =>
     callAPI({ action:'login', email, password }),
+
+  // 工作報告
+  getReports:   (projectId) => callAPI({ action:'getReports', projectId }),
+  createReport: (data) => writeAPI('createReport', data),
+  updateReport: (data) => writeAPI('updateReport', data),
+  deleteReport: (id)   => writeAPI('deleteReport', { id }),
 
   // 系統設定
   getConfig: () =>
@@ -148,7 +176,7 @@ const API = {
   // 文件
   getFiles: (projectId) =>
     callAPI({ action:'getFiles', projectId }),
-  uploadFile: (data) => writeAPI('uploadFile', data),
+  uploadFile: (data) => postAPI({ action:'uploadFile', ...data }),
   deleteFile: (id)   => writeAPI('deleteFile', { id }),
 
   // 分包商指派
