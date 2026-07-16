@@ -466,7 +466,7 @@ function renderStats() {
   document.getElementById('stats').innerHTML = `
     <div class="stat-card"><div class="stat-val">${PROJECTS.length}</div><div class="stat-lbl">全部專案</div><div class="stat-sub">我負責 ${myCount} 個</div></div>
     <div class="stat-card"><div class="stat-val">${PROJECTS.filter(p=>p.status==='施工').length}</div><div class="stat-lbl">施工中</div><div class="stat-sub">${PROJECTS.filter(p=>p.status==='規劃設計').length} 個規劃中</div></div>
-    <div class="stat-card"><div class="stat-val" style="font-size:20px">${totB?'$'+Math.round(totB/10000)+'萬':'—'}</div><div class="stat-lbl">預算總額</div><div class="stat-sub">所有專案合計</div></div>
+    <div class="stat-card"><div class="stat-val" style="font-size:${totB>=1e8?'16px':totB>=1e7?'18px':'20px'}">${totB?fmt(totB):'—'}</div><div class="stat-lbl">預算總額</div><div class="stat-sub">所有專案合計</div></div>
     <div class="stat-card"><div class="stat-val" style="color:${pendingLogs>0?'var(--amber)':'inherit'}">${pendingLogs}</div><div class="stat-lbl">待審核日誌</div><div class="stat-sub">${pendingLogs>0?'需要審核':''}</div></div>`;
 }
 
