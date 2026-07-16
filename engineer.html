@@ -274,7 +274,7 @@ tr.row-other td:first-child{border-left:3px solid transparent}
     <button class="nav-link" id="nl-myproj" onclick="goPage('myproj')"><i class="ti ti-folders"></i> 我的專案</button>
     <button class="nav-link" id="nl-review" onclick="goPage('review')"><i class="ti ti-eye-check"></i> 審核日誌</button>
     <span class="role-badge"><i class="ti ti-hard-hat" style="font-size:11px"></i> 工程師</span>
-    <button class="user-pill" onclick="logout()"><i class="ti ti-user-circle" style="font-size:14px"></i> <span id="user-display-name">載入中</span></button>
+    <button class="user-pill" onclick="openChangePwModal()" title="點擊修改密碼"><i class="ti ti-user-circle" style="font-size:14px"></i> <span id="user-display-name">載入中</span></button>
       <button class="nav-link" onclick="logout()" style="border:1px solid rgba(255,255,255,.2);padding:5px 12px"><i class="ti ti-logout"></i> 登出</button>
   </div>
 </nav>
@@ -1424,6 +1424,46 @@ async function doDeleteFile(pid, fid) {
 }
 
 /* ══ 共用 ══ */
+function openChangePwModal() {
+  document.getElementById('modal-area').innerHTML = `
+    <div class="modal-bg" onclick="void(0)">
+      <div class="modal">
+        <div class="modal-title">
+          <span><i class="ti ti-key"></i> 修改密碼</span>
+          <button class="btn sm" onclick="closeModal()"><i class="ti ti-x"></i></button>
+        </div>
+        <div class="field"><label>目前密碼 *</label><input type="password" id="cp-old" placeholder="輸入目前密碼"></div>
+        <div class="field"><label>新密碼 *</label><input type="password" id="cp-new" placeholder="至少 8 碼"></div>
+        <div class="field"><label>確認新密碼 *</label><input type="password" id="cp-new2" placeholder="再輸入一次"></div>
+        <button class="submit-btn" id="cp-btn" onclick="doChangePw()"><i class="ti ti-check"></i> 確認修改</button>
+      </div>
+    </div>`;
+}
+
+async function doChangePw() {
+  const oldPw = document.getElementById('cp-old').value;
+  const newPw = document.getElementById('cp-new').value;
+  const newPw2= document.getElementById('cp-new2').value;
+  if (!oldPw || !newPw) { showToast('請填寫所有欄位', 'warn'); return; }
+  if (newPw !== newPw2) { showToast('兩次新密碼不一致', 'warn'); return; }
+  if (newPw.length < 8) { showToast('新密碼至少 8 碼', 'warn'); return; }
+
+  setBtnLoading('cp-btn', true);
+  try {
+    // 先驗證舊密碼
+    const loginRes = await API.login(_cu.email, oldPw);
+    if (!loginRes.success) { showToast('目前密碼錯誤', 'error'); setBtnLoading('cp-btn', false); return; }
+    // 修改密碼
+    const res = await API.changePw(_cu.id, newPw);
+    if (res.success) {
+      closeModal();
+      showToast('✓ 密碼已修改，請重新登入', 'success');
+      setTimeout(logout, 1500);
+    } else showToast(res.error||'修改失敗', 'error');
+  } catch(e) { showToast('連線失敗', 'error'); }
+  setBtnLoading('cp-btn', false);
+}
+
 function closeModal() { document.getElementById('modal-area').innerHTML=''; }
 
 function setBtnLoading(id, loading) {
