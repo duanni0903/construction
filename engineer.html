@@ -563,7 +563,8 @@ function renderTable() {
           <button class="btn sm" onclick="event.stopPropagation();goPage('detail','${p.id}')"><i class="ti ti-eye"></i></button>
           ${own
             ? `<button class="btn sm pri" onclick="event.stopPropagation();openEditProjModal('${p.id}')"><i class="ti ti-edit"></i> 編輯</button>
-               ${p.applyStatus==='pending'?`<button class="btn sm danger" onclick="event.stopPropagation();doWithdrawProj('${p.id}')" title="抽回申請"><i class="ti ti-arrow-back-up"></i></button>`:''}`
+               ${p.applyStatus==='pending'?`<button class="btn sm danger" onclick="event.stopPropagation();doWithdrawProj('${p.id}')" title="抽回申請"><i class="ti ti-arrow-back-up"></i></button>`:''}
+               ${['draft','rejected'].includes(p.applyStatus)?`<button class="btn sm danger" onclick="event.stopPropagation();doDeleteProj('${p.id}')" title="刪除專案"><i class="ti ti-trash"></i></button>`:''}`
             : `<button class="btn sm readonly" title="非你負責的專案"><i class="ti ti-lock"></i> 唯讀</button>`}
         </div>
       </td>
@@ -610,7 +611,8 @@ async function renderDetailPage(id) {
             <button class="btn ghost" onclick="openEditProjModal('${p.id}')"><i class="ti ti-edit"></i> 編輯</button>
             <button class="btn ghost" style="background:rgba(255,255,255,.12)" onclick="openAssignModal('${p.id}')"><i class="ti ti-link"></i> 指派分包商</button>
             ${p.applyStatus==='pending'?`<button class="btn ghost" style="border-color:rgba(250,199,117,.5);color:#FAC775" onclick="doWithdrawProj('${p.id}')"><i class="ti ti-arrow-back-up"></i> 抽回申請</button>`:''}
-            ${p.applyStatus==='draft'?`<button class="btn ghost" style="background:rgba(255,255,255,.12)" onclick="doReSendProj('${p.id}')"><i class="ti ti-send"></i> 重新送審</button>`:''}` : ''}
+            ${p.applyStatus==='draft'?`<button class="btn ghost" style="background:rgba(255,255,255,.12)" onclick="doReSendProj('${p.id}')"><i class="ti ti-send"></i> 重新送審</button>`:''}
+            ${['draft','rejected'].includes(p.applyStatus)?`<button class="btn ghost" style="border-color:rgba(242,101,101,.5);color:#F7C1C1" onclick="doDeleteProj('${p.id}')"><i class="ti ti-trash"></i> 刪除專案</button>`:''} ` : ''}
         </div>
       </div>
       <div class="date-strip">
@@ -886,6 +888,21 @@ function drawNewProj() {
         </div>
       </div>
     </div>`;
+}
+
+async function doDeleteProj(id) {
+  const p = PROJECTS.find(x=>x.id===id);
+  if (!p) return;
+  if (!confirm(`確定刪除「${p.name}」？\n\n此操作無法復原，專案資料將永久移除。`)) return;
+  try {
+    const res = await API.deleteProject(id);
+    if (res.success) {
+      showToast('✓ 專案已刪除', 'success');
+      const pr = await callAPI({action:'getProjects'});
+      PROJECTS = pr.success ? pr.projects : PROJECTS;
+      goPage('list');
+    } else showToast(res.error||'刪除失敗', 'error');
+  } catch(e) { showToast('連線失敗', 'error'); }
 }
 
 async function doReSendProj(id) {
