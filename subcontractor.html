@@ -189,24 +189,10 @@ function logout(){ Auth.clear(); window.location.href="login.html"; }
 // ── 從 URL 取得 token ──
 const URL_TOKEN = new URLSearchParams(window.location.search).get('token') || '';
 
-// ── 如果沒有 token，檢查是否有登入 session ──
+// ── 沒有 URL token 時，清除 session 並跳回登入頁 ──
 if (!URL_TOKEN) {
-  if (Auth.isLoggedIn()) {
-    // 有登入 session，跳到對應角色頁面
-    const role = Auth.getUser()?.role;
-    const roleMap = {
-      admin: 'admin.html',
-      manager: 'manager.html',
-      engineer: 'engineer.html',
-      subcontractor: 'subcontractor.html'
-    };
-    if (role && role !== 'subcontractor') {
-      window.location.href = roleMap[role] || 'login.html';
-    }
-  } else {
-    // 沒有 token 也沒有登入，跳回登入頁
-    window.location.href = 'login.html';
-  }
+  Auth.clear();
+  window.location.href = 'login.html';
 }
 
 // ── 狀態 ──
