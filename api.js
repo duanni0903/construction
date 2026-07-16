@@ -210,7 +210,7 @@ function requireAuth(allowedRoles) {
 // ── 登出 ────────────────────────────────────────────────────────
 function logout() {
   Auth.clear();
-  window.location.href = 'login.html';
+  window.location.replace('login.html');
 }
 
 // ── 共用 Toast ──────────────────────────────────────────────────
