@@ -540,6 +540,7 @@ function renderTable() {
           ${own ? `<span class="mine-tag"><i class="ti ti-user" style="font-size:9px"></i> 我的</span>`
                 : `<span class="readonly-tag"><i class="ti ti-eye" style="font-size:9px"></i> 唯讀</span>`}
           ${p.applyStatus==='pending' ? `<span style="font-size:10px;padding:2px 7px;border-radius:20px;background:var(--amber-l);color:var(--amber);border:1px solid #FAC775;flex-shrink:0"><i class="ti ti-clock" style="font-size:9px"></i> 待審核</span>` : ''}
+          ${p.applyStatus==='draft' ? `<span style="font-size:10px;padding:2px 7px;border-radius:20px;background:var(--bg);color:var(--text4);border:1px solid var(--border);flex-shrink:0"><i class="ti ti-pencil" style="font-size:9px"></i> 草稿</span>` : ''}
         </div>
       </td>
       <td>
@@ -561,7 +562,8 @@ function renderTable() {
         <div style="display:flex;gap:5px">
           <button class="btn sm" onclick="event.stopPropagation();goPage('detail','${p.id}')"><i class="ti ti-eye"></i></button>
           ${own
-            ? `<button class="btn sm pri" onclick="event.stopPropagation();openEditProjModal('${p.id}')"><i class="ti ti-edit"></i> 編輯</button>`
+            ? `<button class="btn sm pri" onclick="event.stopPropagation();openEditProjModal('${p.id}')"><i class="ti ti-edit"></i> 編輯</button>
+               ${p.applyStatus==='pending'?`<button class="btn sm danger" onclick="event.stopPropagation();doWithdrawProj('${p.id}')" title="抽回申請"><i class="ti ti-arrow-back-up"></i></button>`:''}`
             : `<button class="btn sm readonly" title="非你負責的專案"><i class="ti ti-lock"></i> 唯讀</button>`}
         </div>
       </td>
@@ -606,7 +608,9 @@ async function renderDetailPage(id) {
           <button class="btn ghost" onclick="goPage('list')"><i class="ti ti-arrow-left"></i> 返回</button>
           ${own ? `
             <button class="btn ghost" onclick="openEditProjModal('${p.id}')"><i class="ti ti-edit"></i> 編輯</button>
-            <button class="btn ghost" style="background:rgba(255,255,255,.12)" onclick="openAssignModal('${p.id}')"><i class="ti ti-link"></i> 指派分包商</button>` : ''}
+            <button class="btn ghost" style="background:rgba(255,255,255,.12)" onclick="openAssignModal('${p.id}')"><i class="ti ti-link"></i> 指派分包商</button>
+            ${p.applyStatus==='pending'?`<button class="btn ghost" style="border-color:rgba(250,199,117,.5);color:#FAC775" onclick="doWithdrawProj('${p.id}')"><i class="ti ti-arrow-back-up"></i> 抽回申請</button>`:''}
+            ${p.applyStatus==='draft'?`<button class="btn ghost" style="background:rgba(255,255,255,.12)" onclick="doReSendProj('${p.id}')"><i class="ti ti-send"></i> 重新送審</button>`:''}`` : ''}
         </div>
       </div>
       <div class="date-strip">
@@ -882,6 +886,32 @@ function drawNewProj() {
         </div>
       </div>
     </div>`;
+}
+
+async function doReSendProj(id) {
+  if (!confirm('確定重新送審此專案？')) return;
+  try {
+    const res = await API.updateProject({ id, applyStatus: 'pending' });
+    if (res.success) {
+      showToast('✓ 已重新送審，等待主管審核', 'success');
+      const pr = await callAPI({action:'getProjects'});
+      PROJECTS = pr.success ? pr.projects : PROJECTS;
+      goPage('detail', id);
+    } else showToast(res.error||'送審失敗', 'error');
+  } catch(e) { showToast('連線失敗', 'error'); }
+}
+
+async function doWithdrawProj(id) {
+  if (!confirm('確定抽回此申請？抽回後專案將變為草稿，主管將不再看到此申請。')) return;
+  try {
+    const res = await API.withdrawProject(id);
+    if (res.success) {
+      showToast('✓ 申請已抽回，專案改為草稿狀態', 'success');
+      const pr = await callAPI({action:'getProjects'});
+      PROJECTS = pr.success ? pr.projects : PROJECTS;
+      goPage('list');
+    } else showToast(res.error||'抽回失敗', 'error');
+  } catch(e) { showToast('連線失敗', 'error'); }
 }
 
 async function doCreateProj() {
