@@ -130,6 +130,11 @@ const API = {
   login: (email, password) =>
     callAPI({ action:'login', email, password }),
 
+  // 組織層級
+  getHierarchy:   () => callAPI({ action:'getHierarchy' }),
+  createRelation: (supervisorId, subordinateId) => writeAPI('createRelation', { supervisorId, subordinateId }),
+  deleteRelation: (id) => writeAPI('deleteRelation', { id }),
+
   // 工作報告
   getReports:   (projectId) => callAPI({ action:'getReports', projectId }),
   createReport: (data) => writeAPI('createReport', data),
