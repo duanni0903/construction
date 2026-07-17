@@ -60,7 +60,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans
     </div>
     <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text3);cursor:pointer;margin-bottom:4px">
       <input type="checkbox" id="remember" style="width:14px;height:14px;cursor:pointer">
-      記住帳號
+      記住帳號與密碼
     </label>
     <button class="login-btn" onclick="doLogin()"><i class="ti ti-login"></i> 登入</button>
 
@@ -83,11 +83,15 @@ function redirectByRole(role) {
 // 已登入則直接跳轉
 if (Auth.isLoggedIn()) redirectByRole(Auth.getUser().role);
 
-// 載入記住的帳號
+// 載入記住的帳號密碼
 const _saved = localStorage.getItem('cm_saved_email');
+const _savedPw = localStorage.getItem('cm_saved_pw');
 if (_saved) {
   document.getElementById('email').value = _saved;
   document.getElementById('remember').checked = true;
+}
+if (_savedPw) {
+  document.getElementById('pw').value = _savedPw;
 }
 
 async function doLogin() {
@@ -104,11 +108,13 @@ async function doLogin() {
   try {
     const res = await API.login(email, pw);
     if (res.success) {
-      // 記住帳號
+      // 記住帳號與密碼
       if (document.getElementById('remember').checked) {
         localStorage.setItem('cm_saved_email', email);
+        localStorage.setItem('cm_saved_pw', pw);
       } else {
         localStorage.removeItem('cm_saved_email');
+        localStorage.removeItem('cm_saved_pw');
       }
       Auth.clear(); // 先清除舊 session
       Auth.save(res.token, res.user);
