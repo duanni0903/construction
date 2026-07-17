@@ -984,9 +984,10 @@ function exportReportPDF(projId) {
   <div class="section">需求說明</div>
   <table><tr><td style="white-space:pre-wrap;line-height:1.6">${d.req}</td></tr></table>
   <div class="section">進度說明</div>
-  <table>
-    <tr><th class="date-col">日期</th><th>說明</th></tr>
-    ${d.progress.map(pg=>`<tr><td class="date-col">${pg.date}</td><td style="white-space:pre-wrap;line-height:1.6">${pg.note}</td></tr>`).join('')||'<tr><td colspan="2">—</td></tr>'}
+  <table style="table-layout:fixed">
+    <colgroup><col style="width:100px"><col></colgroup>
+    <tr><th style="width:100px">日期</th><th>說明</th></tr>
+    ${d.progress.map(pg=>`<tr><td style="width:100px;white-space:nowrap;color:#555">${pg.date}</td><td style="white-space:pre-wrap;line-height:1.6">${pg.note}</td></tr>`).join('')||'<tr><td colspan="2">—</td></tr>'}
   </table>
   <div class="section">待處置事項</div>
   <table><tr><td style="white-space:pre-wrap;line-height:1.6">${d.pending}</td></tr></table>
@@ -1003,24 +1004,27 @@ function exportReportWord(projId) {
   if (!d) { showToast('請先建立工作報告', 'warn'); return; }
 
   const progRows = d.progress.map(pg =>
-    `<tr><td style="width:90px;border:1px solid #DDD;padding:6px 8px;white-space:nowrap">${pg.date}</td>
-     <td style="border:1px solid #DDD;padding:6px 8px;line-height:1.6">${pg.note.replace(/\n/g,'<br>')}</td></tr>`
-  ).join('') || '<tr><td colspan="2" style="border:1px solid #DDD;padding:6px 8px">—</td></tr>';
+    `<tr>
+      <td style="width:100px;white-space:nowrap;color:#555;padding:7px 10px;border:1px solid #DDE1E9">${pg.date}</td>
+      <td style="white-space:pre-wrap;line-height:1.6;padding:7px 10px;border:1px solid #DDE1E9">${pg.note}</td>
+    </tr>`
+  ).join('') || '<tr><td colspan="2" style="border:1px solid #DDE1E9;padding:7px 10px">—</td></tr>';
+
+  const sharedStyle = `
+    body{font-family:'Noto Sans TC','微軟正黑體',sans-serif;font-size:13px;color:#18232F;margin:2cm}
+    h1{font-size:18px;font-weight:700;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #1B2A3B}
+    .section{font-size:11px;font-weight:600;color:#718096;text-transform:uppercase;letter-spacing:.05em;margin:14px 0 5px}
+    table{width:100%;border-collapse:collapse;margin-bottom:14px}
+    th{background:#F2F4F7;border:1px solid #DDE1E9;padding:7px 10px;font-weight:600;width:90px;white-space:nowrap;font-size:12px}
+    td{border:1px solid #DDE1E9;padding:7px 10px;vertical-align:top;font-size:13px}
+    .date-col{width:95px;white-space:nowrap;color:#555;font-size:12px}
+  `;
 
   const html = `
     <html xmlns:o="urn:schemas-microsoft-com:office:office"
           xmlns:w="urn:schemas-microsoft-com:office:word"
           xmlns="http://www.w3.org/TR/REC-html40">
-    <head><meta charset="UTF-8">
-    <style>
-      body{font-family:'新細明體',serif;font-size:12pt;margin:2cm}
-      h1{font-size:16pt;font-weight:bold;border-bottom:2px solid #000;padding-bottom:6pt;margin-bottom:12pt}
-      h3{font-size:11pt;font-weight:bold;margin:12pt 0 4pt;color:#444}
-      table{width:100%;border-collapse:collapse;margin-bottom:12pt}
-      th{background:#EEE;border:1px solid #DDD;padding:6px 8px;font-size:11pt;text-align:left;width:80px}
-      td{border:1px solid #DDD;padding:6px 8px;font-size:11pt;vertical-align:top}
-      .proj-name{font-weight:bold;font-size:12pt}
-    </style></head><body>
+    <head><meta charset="UTF-8"><style>${sharedStyle}</style></head><body>
     <h1>工作報告</h1>
     <table>
       <tr><th>案件編號</th><td>${d.caseNo}</td><th>供應商</th><td>${d.vendor}</td></tr>
@@ -1028,17 +1032,18 @@ function exportReportWord(projId) {
       <tr><th>案件狀態</th><td>${d.status}</td><th>持續追蹤</th><td>${d.tracking}</td></tr>
       <tr><th>DRI</th><td>${d.dri}</td><th>經辦單位</th><td>${d.unit}</td></tr>
     </table>
-    <h3>工作項目</h3>
-    <table><tr><td class="proj-name">${d.p.name}</td></tr></table>
-    <h3>需求說明</h3>
-    <table><tr><td style="white-space:pre-wrap;line-height:1.8">${d.req}</td></tr></table>
-    <h3>進度說明</h3>
-    <table>
-      <tr><th style="width:90px">日期</th><th>說明</th></tr>
+    <div class="section">工作項目</div>
+    <table><tr><td style="font-weight:600">${d.p.name}</td></tr></table>
+    <div class="section">需求說明</div>
+    <table><tr><td style="white-space:pre-wrap;line-height:1.7">${d.req}</td></tr></table>
+    <div class="section">進度說明</div>
+    <table style="table-layout:fixed;width:100%">
+      <colgroup><col style="width:100px"><col></colgroup>
+      <tr><th style="width:100px">日期</th><th>說明</th></tr>
       ${progRows}
     </table>
-    <h3>待處置事項</h3>
-    <table><tr><td style="white-space:pre-wrap;line-height:1.8">${d.pending}</td></tr></table>
+    <div class="section">待處置事項</div>
+    <table><tr><td style="white-space:pre-wrap;line-height:1.7">${d.pending}</td></tr></table>
     </body></html>`;
 
   const blob = new Blob([html], { type: 'application/msword;charset=utf-8' });
