@@ -674,8 +674,8 @@ function exportMgrWord(projId) {
 
   const progRows = (rpt.progress||[]).map(pg=>
     `<tr>
-      <td style="width:60pt;white-space:nowrap;color:#555555;font-size:10pt;padding:4pt 6pt;border:1pt solid #DDE1E9;vertical-align:top">${pg.date}</td>
-      <td style="font-size:11pt;padding:4pt 6pt;border:1pt solid #DDE1E9;vertical-align:top;line-height:1.6">${pg.note}</td>
+      <td style="width:3cm;white-space:nowrap;color:#555555;font-size:10pt;padding:4pt 6pt;border:1pt solid #DDE1E9;vertical-align:top">${pg.date}</td>
+      <td style="width:15cm;font-size:11pt;padding:4pt 6pt;border:1pt solid #DDE1E9;vertical-align:top;line-height:1.6">${pg.note}</td>
     </tr>`
   ).join('') || '<tr><td colspan="2" style="padding:4pt 6pt;border:1pt solid #DDE1E9;color:#999999">尚無進度記錄</td></tr>';
 
@@ -714,8 +714,8 @@ function exportMgrWord(projId) {
     <table><tr><td style="line-height:1.7">${(rpt.requirement||'—').replace(/\n/g,'<br>')}</td></tr></table>
     <span class="section">進度說明</span>
     <table style="table-layout:fixed;width:100%">
-      <colgroup><col style="width:60pt"><col></colgroup>
-      <tr><th style="width:60pt">日期</th><th>說明</th></tr>
+      <colgroup><col style="width:3cm"><col style="width:15cm"></colgroup>
+      <tr><th style="width:3cm">日期</th><th style="width:15cm">說明</th></tr>
       ${progRows}
     </table>
     <span class="section">待處置事項</span>
