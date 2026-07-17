@@ -623,7 +623,7 @@ function exportMgrPDF(projId) {
   const rpt = (REPORTS_CACHE[projId]||[])[0];
   const p   = PROJECTS.find(x=>x.id===projId);
   if (!rpt || !p) return;
-  const progRows = (rpt.progress||[]).map(pg=>`<tr><td style="width:90px;white-space:nowrap">${pg.date}</td><td style="white-space:pre-wrap;line-height:1.6">${pg.note}</td></tr>`).join('');
+  const progRows = (rpt.progress||[]).map(pg=>`<tr><td style="width:100px;white-space:nowrap;color:#555">${pg.date}</td><td style="white-space:pre-wrap;line-height:1.6">${pg.note}</td></tr>`).join('');
   const html=`<!DOCTYPE html><html lang="zh-TW"><head><meta charset="UTF-8"><title>工作報告</title>
   <style>body{font-family:'Noto Sans TC',sans-serif;font-size:13px;margin:20px}
   table{width:100%;border-collapse:collapse;margin-bottom:14px}
@@ -634,7 +634,7 @@ function exportMgrPDF(projId) {
     <tr><th>案件狀態</th><td>${rpt.status||'—'}</td><th>DRI</th><td>${rpt.dri||'—'}</td></tr>
   </table>
   <h4>需求說明</h4><table><tr><td style="white-space:pre-wrap">${rpt.requirement||'—'}</td></tr></table>
-  <h4>進度說明</h4><table><tr><th>日期</th><th>說明</th></tr>${progRows||'<tr><td colspan="2">—</td></tr>'}</table>
+  <h4>進度說明</h4><table style="table-layout:fixed;width:100%"><colgroup><col style="width:100px"><col></colgroup><tr><th style="width:100px">日期</th><th>說明</th></tr>${progRows||'<tr><td colspan="2">—</td></tr>'}</table>
   <h4>待處置事項</h4><table><tr><td style="white-space:pre-wrap">${rpt.pending||'—'}</td></tr></table>
   </body></html>`;
   const win=window.open('','_blank');win.document.write(html);win.document.close();setTimeout(()=>win.print(),500);
@@ -645,9 +645,11 @@ function exportMgrWord(projId) {
   if (!d) return;
   const { rpt, p } = d;
   const progRows = (rpt.progress||[]).map(pg=>
-    `<tr><td style="width:90px;border:1px solid #DDD;padding:6px 8px;white-space:nowrap">${pg.date}</td>
-     <td style="border:1px solid #DDD;padding:6px 8px;line-height:1.6">${pg.note}</td></tr>`
-  ).join('') || '<tr><td colspan="2" style="border:1px solid #DDD;padding:6px 8px">—</td></tr>';
+    `<tr>
+      <td style="width:100px;white-space:nowrap;color:#555;padding:7px 10px;border:1px solid #DDE1E9">${pg.date}</td>
+      <td style="white-space:pre-wrap;line-height:1.6;padding:7px 10px;border:1px solid #DDE1E9">${pg.note}</td>
+    </tr>`
+  ).join('') || '<tr><td colspan="2" style="border:1px solid #DDE1E9;padding:7px 10px">—</td></tr>';
 
   const html = `
     <html xmlns:o="urn:schemas-microsoft-com:office:office"
@@ -674,7 +676,7 @@ function exportMgrWord(projId) {
     <h3>需求說明</h3>
     <table><tr><td style="white-space:pre-wrap;line-height:1.8">${rpt.requirement||'—'}</td></tr></table>
     <h3>進度說明</h3>
-    <table><tr><th style="width:90px">日期</th><th>說明</th></tr>${progRows}</table>
+    <table style="table-layout:fixed;width:100%"><colgroup><col style="width:100px"><col></colgroup><tr><th style="width:100px">日期</th><th>說明</th></tr>${progRows}</table>
     <h3>待處置事項</h3>
     <table><tr><td style="white-space:pre-wrap;line-height:1.8">${rpt.pending||'—'}</td></tr></table>
     </body></html>`;
