@@ -1,295 +1,653 @@
-// ================================================================
-//  工程管理系統 — 前端 API 客戶端
-//  所有頁面共用，修改 API_URL 即可切換後端
-// ================================================================
-
-const API_URL = 'https://script.google.com/macros/s/AKfycbyh1n95R50EWLU3AJST65-JYLB_T9NIS8aRUS6tPpUgZKNsTLi-snJw-NNOAzGoY7OE/exec';
-
-// ── Token 管理 ──────────────────────────────────────────────────
-const Auth = {
-  save(token, user) {
-    sessionStorage.setItem('cm_token', token);
-    sessionStorage.setItem('cm_user',  JSON.stringify(user));
-  },
-  getToken() { return sessionStorage.getItem('cm_token') || ''; },
-  getUser()  {
-    try { return JSON.parse(sessionStorage.getItem('cm_user') || 'null'); }
-    catch(e) { return null; }
-  },
-  clear() {
-    sessionStorage.removeItem('cm_token');
-    sessionStorage.removeItem('cm_user');
-  },
-  isLoggedIn() { return !!this.getToken() && !!this.getUser(); },
-  // 角色判斷
-  isAdmin()    { return this.getUser()?.role === 'admin'; },
-  isManager()  { return this.getUser()?.role === 'manager'; },
-  isEngineer() { return this.getUser()?.role === 'engineer'; },
-  isSub()      { return this.getUser()?.role === 'subcontractor'; },
-};
-
-// ── API 呼叫（fetch + no-cors fallback）─────────────────────────
-async function callAPI(params) {
-  // 自動帶入 token
-  if (Auth.getToken() && !params.token) {
-    params.token = Auth.getToken();
-  }
-
-  const qs = Object.entries(params)
-    .map(([k,v]) => encodeURIComponent(k) + '=' + encodeURIComponent(
-      typeof v === 'object' ? JSON.stringify(v) : v
-    )).join('&');
-
-  const url = API_URL + '?' + qs;
-
-  // 先嘗試 fetch（follow redirects）
-  try {
-    const res = await fetch(url, {
-      method: 'GET',
-      redirect: 'follow',
-    });
-    const text = await res.text();
-    // Apps Script 回傳 JSONP 格式：callback({...}) 或 callback([...])
-    // 用 regex 去掉 callback 名稱，只取 JSON 部分
-        const match = text.match(/^[\w$]+\(([\s\S]+)\);?\s*$/);
-    if (match) {
-      return JSON.parse(match[1]);
-    }
-    // 嘗試直接解析 JSON
-    return JSON.parse(text);
-  } catch(e) {
-    // fetch 失敗則 fallback 到 JSONP
-    return jsonpCall(url);
-  }
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工程管理系統 — 系統管理員</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#1B2A3B;--blue:#185FA5;--blue-l:#E6F1FB;--blue-m:#B5D4F4;
+  --green:#0F6E56;--green-l:#E1F5EE;--amber:#854F0B;--amber-l:#FAEEDA;
+  --red:#A32D2D;--red-l:#FCEBEB;--purple:#3C3489;--purple-l:#EEEDFE;
+  --bg:#F2F4F7;--surface:#fff;--border:#DDE1E9;--border-l:#EEF0F5;
+  --text:#18232F;--text2:#4A5568;--text3:#718096;--text4:#A0AEC0;
+  --r:10px;--r-sm:6px;
 }
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
+.topnav{background:var(--navy);padding:0 20px;height:52px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.logo{display:flex;align-items:center;gap:8px;color:#fff;font-size:14px;font-weight:600;letter-spacing:.01em}
+.logo-icon{width:28px;height:28px;background:var(--blue);border-radius:6px;display:flex;align-items:center;justify-content:center}
+.breadcrumb{display:flex;align-items:center;gap:6px;margin-left:12px;padding-left:12px;border-left:1px solid rgba(255,255,255,.15)}
+.bc-cur{font-size:13px;color:#fff;font-weight:500}
+.topnav-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.role-badge{font-size:11px;background:rgba(60,52,137,.3);color:#D5D2F9;border:1px solid rgba(60,52,137,.4);border-radius:20px;padding:3px 10px;font-weight:500}
+.nav-link{font-size:12px;color:rgba(255,255,255,.6);padding:5px 10px;border-radius:var(--r-sm);cursor:pointer;display:inline-flex;align-items:center;gap:5px;border:1px solid transparent;transition:all .15s;background:transparent;font-family:inherit;white-space:nowrap}
+.nav-link:hover{background:rgba(255,255,255,.1);color:#fff}
+.nav-link.active{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.15)}
+.user-pill{display:flex;align-items:center;gap:6px;font-size:12px;color:rgba(255,255,255,.65);cursor:pointer;padding:5px 10px;border:1px solid rgba(255,255,255,.15);border-radius:var(--r-sm);background:transparent;font-family:inherit;transition:all .15s}
+.user-pill:hover{background:rgba(255,255,255,.1);color:#fff}
+.btn{border:1px solid var(--border);background:var(--surface);border-radius:var(--r-sm);padding:7px 13px;font-size:12px;cursor:pointer;color:var(--text2);display:inline-flex;align-items:center;gap:5px;transition:all .15s;font-family:inherit;white-space:nowrap;font-weight:500}
+.btn:hover{background:var(--bg);border-color:var(--text4)}
+.btn.pri{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn.pri:hover{background:#0C447C}
+.btn.ghost{background:transparent;border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.7)}
+.btn.ghost:hover{background:rgba(255,255,255,.1);color:#fff}
+.btn.sm{padding:4px 9px;font-size:11px}
+.btn.danger{color:var(--red);border-color:#F7C1C1}
+.btn.danger:hover{background:var(--red-l)}
+.btn.warn{color:var(--amber);border-color:#FAC775}
+.btn.warn:hover{background:var(--amber-l)}
+.page{display:none;max-width:1100px;margin:0 auto;padding:20px}
+.page.active{display:block}
+.page-hd{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap}
+.page-title{font-size:20px;font-weight:700;color:var(--text);letter-spacing:-.01em}
+.page-sub{font-size:13px;color:var(--text3);margin-top:4px}
+.badge{display:inline-flex;align-items:center;gap:3px;font-size:11px;padding:3px 9px;border-radius:20px;font-weight:600;white-space:nowrap}
+.b-plan{background:var(--purple-l);color:var(--purple)}
+.b-bid{background:var(--amber-l);color:var(--amber)}
+.b-work{background:var(--blue-l);color:var(--blue)}
+.b-chk{background:var(--green-l);color:var(--green)}
+.b-active{background:var(--green-l);color:var(--green)}
+.b-inactive{background:var(--red-l);color:var(--red)}
+.tag-admin{background:var(--purple-l);color:var(--purple)}
+.tag-mgr{background:var(--blue-l);color:var(--blue)}
+.tag-eng{background:var(--green-l);color:var(--green)}
+.tag-sub{background:var(--amber-l);color:var(--amber)}
+.av{border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:600;flex-shrink:0}
+.av-a{background:#C8DEFA;color:#0C447C}.av-b{background:#A8EDD8;color:#085041}
+.av-c{background:#F5C6D0;color:#72243E}.av-d{background:#FAD7A0;color:#633806}
+.av-e{background:#D5D2F9;color:#3C3489}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px}
+.stat-val{font-size:26px;font-weight:700;color:var(--text);line-height:1;margin-bottom:4px}
+.stat-lbl{font-size:12px;color:var(--text3);font-weight:500}
+.stat-sub{font-size:11px;color:var(--text4);margin-top:4px}
+.section-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px}
+.section-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.section-title{font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead{background:var(--bg)}
+th{padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:var(--text3);border-bottom:1px solid var(--border);white-space:nowrap;letter-spacing:.03em;text-transform:uppercase}
+td{padding:11px 14px;border-bottom:1px solid var(--border-l);color:var(--text);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+.user-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border-l)}
+.user-row:last-child{border-bottom:none}
+.user-info{flex:1;min-width:0}
+.user-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px}
+.user-email{font-size:11px;color:var(--text4)}
+.log-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-l)}
+.log-item:last-child{border-bottom:none}
+.log-time{font-size:11px;color:var(--text4);white-space:nowrap;width:55px;flex-shrink:0;padding-top:2px}
+.log-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.log-body{flex:1}
+.log-msg{font-size:13px;color:var(--text);margin-bottom:2px}
+.log-detail{font-size:11px;color:var(--text4)}
+.setting-item{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border-l)}
+.setting-item:last-child{border-bottom:none}
+.setting-lbl{font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px}
+.setting-desc{font-size:12px;color:var(--text4)}
+.setting-val{font-size:13px;color:var(--text2);text-align:right}
+.alert{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:var(--r-sm);margin-bottom:14px;font-size:13px;line-height:1.5}
+.alert-warn{background:var(--amber-l);border:1px solid #FAC775;color:var(--amber)}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modal-bg{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:200;padding:16px}
+.modal{background:var(--surface);border-radius:var(--r);border:1px solid var(--border);padding:24px;width:460px;max-width:100%;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-title{font-size:16px;font-weight:700;color:var(--text);margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+.field{margin-bottom:14px}
+.field:last-child{margin-bottom:0}
+.field label{font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px}
+.field input,.field select{width:100%;padding:9px 12px;border-radius:var(--r-sm);border:1px solid var(--border);font-size:13px;font-family:inherit;color:var(--text);transition:border-color .15s}
+.field input:focus,.field select:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(24,95,165,.1)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.submit-btn{width:100%;padding:11px;background:var(--blue);color:#fff;border:none;border-radius:var(--r-sm);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px}
+.submit-btn:hover{background:#0C447C}
+.empty{text-align:center;padding:2rem;color:var(--text4)}
+.empty i{font-size:28px;display:block;margin-bottom:10px}
+@media(max-width:680px){.stats{grid-template-columns:1fr 1fr}.two-col{grid-template-columns:1fr}.page{padding:12px}.nav-link{display:none}}
+</style>
+</head>
+<body>
+<nav class="topnav">
+  <div class="logo">
+    <div class="logo-icon"><i class="ti ti-building-factory-2" style="color:#fff;font-size:15px"></i></div>
+    工程管理系統
+  </div>
+  <div class="breadcrumb"><span class="bc-cur" id="bc-cur">系統總覽</span></div>
+  <div class="topnav-right">
+    <button class="nav-link active" id="nl-dash"  onclick="goPage('dash')"  ><i class="ti ti-layout-dashboard"></i> 系統總覽</button>
+    <button class="nav-link"        id="nl-users" onclick="goPage('users')" ><i class="ti ti-users"></i> 帳號管理</button>
+    <button class="nav-link"        id="nl-projs" onclick="goPage('projs')" ><i class="ti ti-folders"></i> 所有專案</button>
+    <button class="nav-link"        id="nl-config"onclick="goPage('config')"><i class="ti ti-settings"></i> 系統設定</button>
+    <button class="nav-link"        id="nl-hier" onclick="goPage('hier')" ><i class="ti ti-sitemap"></i> 組織層級</button>
+    <span class="role-badge"><i class="ti ti-shield-check" style="font-size:11px"></i> 系統管理員</span>
+    <button class="user-pill"><i class="ti ti-user-circle" style="font-size:14px"></i> 系統管理員</button>
+      <button class="nav-link" onclick="logout()" style="border:1px solid rgba(255,255,255,.2);padding:5px 12px"><i class="ti ti-logout"></i> 登出</button>
+  </div>
+</nav>
 
-function jsonpCall(url) {
-  return new Promise((resolve, reject) => {
-    const cbName = 'cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
-    const timeout = setTimeout(() => {
-      delete window[cbName];
-      if (script && script.parentNode) script.parentNode.removeChild(script);
-      reject(new Error('API 請求逾時'));
-    }, 20000);
+<div class="page active" id="page-dash"></div>
+<div class="page" id="page-users"></div>
+<div class="page" id="page-projs"></div>
+<div class="page" id="page-config"></div>
+<div class="page" id="page-hier"></div>
+<div id="modal-area"></div>
 
-    window[cbName] = (data) => {
-      clearTimeout(timeout);
-      delete window[cbName];
-      if (script && script.parentNode) script.parentNode.removeChild(script);
-      resolve(data);
-    };
+<script src="api.js"></script>
+<script>
+// ── 登入守衛 ──
+if (!requireAuth(['admin'])) { /* 已跳轉 */ }
+const _cu = Auth.getUser();
+if (_cu) document.querySelector('.user-pill').innerHTML =
+  `<i class="ti ti-user-circle" style="font-size:14px"></i> ${_cu.name}`;
 
-    // 把 callback 參數加進去
-    const cbUrl = url + (url.includes('?') ? '&' : '?') + 'callback=' + cbName;
-    const script = document.createElement('script');
-    script.src = cbUrl;
-    script.onerror = () => {
-      clearTimeout(timeout);
-      delete window[cbName];
-      reject(new Error('API 網路錯誤'));
-    };
-    document.head.appendChild(script);
+// ── 狀態 ──
+let USERS    = [];
+let PROJECTS = [];
+
+const SCLS={規劃設計:'b-plan',工程發包:'b-bid',施工:'b-work',驗收:'b-chk'};
+const ROLE_TAG={admin:'tag-admin',manager:'tag-mgr',engineer:'tag-eng',subcontractor:'tag-sub'};
+const ROLE_LBL={admin:'系統管理員',manager:'主管',engineer:'工程師',subcontractor:'分包商'};
+const ROLE_VAL_TO_KEY={工程師:'engineer',主管:'manager',分包商:'subcontractor',系統管理員:'admin'};
+const ROLE_KEY_TO_VAL={engineer:'工程師',manager:'主管',subcontractor:'分包商',admin:'系統管理員'};
+const AV_CLS_LIST=['av-a','av-b','av-c','av-d','av-e'];
+const fmt=n=>n?'$'+Number(n).toLocaleString():'—';
+function avCls(id){ const i=parseInt(id.replace(/\D/g,''))||0; return AV_CLS_LIST[i%5]; }
+
+// ── 頁面切換 ──
+function goPage(id){
+  ['dash','users','projs','config','hier'].forEach(p=>{
+    document.getElementById('page-'+p).classList.toggle('active',p===id);
+    const b=document.getElementById('nl-'+p);if(b)b.classList.toggle('active',p===id);
   });
+  const labels={dash:'系統總覽',users:'帳號管理',projs:'所有專案',config:'系統設定',hier:'組織層級'};
+  document.getElementById('bc-cur').textContent=labels[id]||id;
+  if(id==='dash')   loadDash();
+  if(id==='users')  loadUsers();
+  if(id==='projs')  loadProjs();
+  if(id==='config') renderConfig();
+  if(id==='hier')   loadHier();
+  window.scrollTo(0,0);
 }
 
-// ── 寫入操作（透過 write action）────────────────────────────────
-function writeAPI(action, data) {
-  // 將所有欄位攤平成 GET 參數，避免 JSON 雙重編碼問題
-  const params = { action: 'write', writeAction: action };
-  Object.entries(data || {}).forEach(([k, v]) => {
-    params[k] = typeof v === 'object' ? JSON.stringify(v) : v;
-  });
-  return callAPI(params);
-}
-
-// ── POST 上傳（用於大檔案，繞過 URL 長度限制）────────────────────
-async function postAPI(data) {
-  const url = API_URL;
-  if (Auth.getToken() && !data.token) {
-    data.token = Auth.getToken();
-  }
+// ── 系統總覽 ──
+async function loadDash(){
+  const el=document.getElementById('page-dash');
+  showLoading(true,'page-dash');
   try {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-      redirect: 'follow',
-    });
-    const text = await res.text();
-    const match = text.match(/^[\w$]+\(([\s\S]+)\);?\s*$/);
-    if (match) return JSON.parse(match[1]);
-    return JSON.parse(text);
-  } catch(e) {
-    throw new Error('POST API 失敗: ' + e.message);
-  }
+    const [ur, pr] = await Promise.all([API.getUsers(), API.getProjects()]);
+    USERS    = ur.success ? ur.users    : [];
+    PROJECTS = pr.success ? pr.projects : [];
+    renderDash();
+  } catch(e){ el.innerHTML=`<div class="empty"><i class="ti ti-wifi-off"></i>載入失敗，請重新整理</div>`; }
 }
 
-// ── 各功能 API ──────────────────────────────────────────────────
-const API = {
-  // 登入
-  login: (email, password) =>
-    callAPI({ action:'login', email, password }),
-
-  // 組織層級
-  getHierarchy:   () => callAPI({ action:'getHierarchy' }),
-  createRelation: (supervisorId, subordinateId) => writeAPI('createRelation', { supervisorId, subordinateId }),
-  deleteRelation: (id) => writeAPI('deleteRelation', { id }),
-
-  // 工作報告
-  getReports:   (projectId) => callAPI({ action:'getReports', projectId }),
-  createReport: (data) => writeAPI('createReport', data),
-  updateReport: (data) => writeAPI('updateReport', data),
-  deleteReport: (id)   => writeAPI('deleteReport', { id }),
-
-  // 系統設定
-  getConfig: () =>
-    callAPI({ action:'getConfig' }),
-
-  // 使用者
-  getUsers: () =>
-    callAPI({ action:'getUsers' }),
-  createUser: (data) => writeAPI('createUser', data),
-  updateUser: (data) => writeAPI('updateUser', data),
-  deleteUser: (id)   => writeAPI('deleteUser', { id }),
-  toggleUser: (id)   => writeAPI('toggleUser', { id }),
-  changePw:   (id, password) => writeAPI('changePw', { id, password }),
-
-  // 工程專案
-  getProjects: (params={}) =>
-    callAPI({ action:'getProjects', ...params }),
-  createProject: (data) => writeAPI('createProject', data),
-  updateProject: (data) => writeAPI('updateProject', data),
-  deleteProject: (id)   => writeAPI('deleteProject', { id }),
-  approveProject: (id, approved) =>
-    writeAPI('approveProject', { id, approved }),
-  withdrawProject: (id) =>
-    writeAPI('withdrawProject', { id }),
-
-  // 工項
-  getTasks: (projectId) =>
-    callAPI({ action:'getTasks', projectId }),
-  createTask: (data) => writeAPI('createTask', data),
-  updateTask: (data) => writeAPI('updateTask', data),
-  deleteTask: (id)   => writeAPI('deleteTask', { id }),
-
-  // 施工日誌
-  getLogs: (projectId) =>
-    callAPI({ action:'getLogs', projectId }),
-  createLog:  (data)        => writeAPI('createLog',  data),
-  reviewLog:  (id, approved) => writeAPI('reviewLog', { id, approved }),
-
-  // 文件
-  getFiles: (projectId) =>
-    callAPI({ action:'getFiles', projectId }),
-  uploadFile: (data) => postAPI({ action:'uploadFile', ...data }),
-  deleteFile: (id)   => writeAPI('deleteFile', { id }),
-
-  // 分包商指派
-  getAssigns:   (projectId) =>
-    callAPI({ action:'getAssigns', projectId }),
-  createAssign: (data) => writeAPI('createAssign', data),
-  deleteAssign: (id)   => writeAPI('deleteAssign', { id }),
-
-  // 分包商公開（免 token）
-  getAssign: (token) =>
-    callAPI({ action:'getAssign', token }),
-  subFill: (token, data) =>
-    callAPI({ action:'subFill', token, data: JSON.stringify(data) }),
-};
-
-// ── 登入守衛（頁面載入時檢查）──────────────────────────────────
-function requireAuth(allowedRoles) {
-  if (!Auth.isLoggedIn()) {
-    window.location.href = 'login.html';
-    return false;
-  }
-  const user = Auth.getUser();
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
-    alert('你沒有權限存取此頁面');
-    window.location.href = 'login.html';
-    return false;
-  }
-  return true;
-}
-
-// ── 登出 ────────────────────────────────────────────────────────
-function logout() {
-  Auth.clear();
-  window.location.replace('login.html');
-}
-
-// ── 共用 Toast ──────────────────────────────────────────────────
-let _toastTimer;
-function showToast(msg, type='default') {
-  let el = document.getElementById('_toast');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = '_toast';
-    Object.assign(el.style, {
-      position:'fixed', bottom:'24px', left:'50%',
-      transform:'translateX(-50%)', padding:'10px 20px',
-      borderRadius:'24px', fontSize:'13px', fontWeight:'500',
-      zIndex:'9999', opacity:'0', transition:'opacity .2s',
-      pointerEvents:'none', whiteSpace:'nowrap',
-      boxShadow:'0 4px 16px rgba(0,0,0,.25)',
-    });
-    document.body.appendChild(el);
-  }
-  const colors = {
-    default: { bg:'#1B2A3B', color:'#fff' },
-    success: { bg:'#0F6E56', color:'#fff' },
-    error:   { bg:'#A32D2D', color:'#fff' },
-    warn:    { bg:'#854F0B', color:'#fff' },
-  };
-  const c = colors[type] || colors.default;
-  el.style.background = c.bg;
-  el.style.color = c.color;
-  el.textContent = msg;
-  el.style.opacity = '1';
-  clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(() => el.style.opacity = '0', 2800);
-}
-
-// ── 共用 Loading ─────────────────────────────────────────────────
-function showLoading(show, targetId) {
-  const el = targetId ? document.getElementById(targetId) : null;
-  if (!el) return;
-  if (show) {
-    el.innerHTML = `<div style="text-align:center;padding:3rem;color:#A0AEC0">
-      <i class="ti ti-loader" style="font-size:28px;display:block;margin-bottom:10px;animation:spin 1s linear infinite"></i>
-      載入中...
+function renderDash(){
+  const el=document.getElementById('page-dash');
+  const activeU=USERS.filter(u=>u.status==='active').length;
+  const totB=PROJECTS.reduce((a,p)=>a+Number(p.budget||0),0);
+  el.innerHTML=`
+    <div class="page-hd">
+      <div><div class="page-title">系統總覽</div>
+      <div class="page-sub">${new Date().toLocaleDateString('zh-TW',{year:'numeric',month:'long',day:'numeric'})} · 系統管理員</div></div>
+    </div>
+    <div class="stats">
+      <div class="stat-card"><div class="stat-val">${PROJECTS.length}</div><div class="stat-lbl">工程專案</div><div class="stat-sub">${PROJECTS.filter(p=>p.status==='施工').length} 個施工中</div></div>
+      <div class="stat-card"><div class="stat-val">${USERS.length}</div><div class="stat-lbl">系統使用者</div><div class="stat-sub">${activeU} 個啟用中</div></div>
+      <div class="stat-card"><div class="stat-val" style="font-size:20px">${totB?fmt(totB):'—'}</div><div class="stat-lbl">專案預算總額</div></div>
+      <div class="stat-card"><div class="stat-val">${PROJECTS.filter(p=>p.applyStatus==='pending').length}</div><div class="stat-lbl">待審核申請</div></div>
+    </div>
+    <div class="two-col">
+      <div class="section-card">
+        <div class="section-hd"><span class="section-title">使用者角色分佈</span></div>
+        ${Object.entries(ROLE_LBL).map(([r,lbl])=>{
+          const cnt=USERS.filter(u=>u.role===r).length;
+          return`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-l)">
+            <span class="badge ${ROLE_TAG[r]}">${lbl}</span>
+            <span style="font-size:14px;font-weight:700">${cnt} 人</span>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="section-card">
+        <div class="section-hd"><span class="section-title">快速操作</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn" style="justify-content:flex-start" onclick="goPage('users');setTimeout(openAddUserModal,80)"><i class="ti ti-user-plus"></i> 新增使用者帳號</button>
+          <button class="btn" style="justify-content:flex-start" onclick="goPage('projs')"><i class="ti ti-folders"></i> 管理所有專案</button>
+          <button class="btn" style="justify-content:flex-start" onclick="goPage('config')"><i class="ti ti-settings"></i> 系統全域設定</button>
+          <button class="btn danger" style="justify-content:flex-start" onclick="logout()"><i class="ti ti-logout"></i> 登出系統</button>
+        </div>
+      </div>
     </div>`;
-    if (!document.getElementById('_spin_style')) {
-      const s = document.createElement('style');
-      s.id = '_spin_style';
-      s.textContent = '@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}';
-      document.head.appendChild(s);
+}
+
+// ── 帳號管理 ──
+async function loadUsers(){
+  showLoading(true,'page-users');
+  try {
+    const res = await API.getUsers();
+    USERS = res.success ? res.users : [];
+    renderUsers();
+  } catch(e){ document.getElementById('page-users').innerHTML=`<div class="empty"><i class="ti ti-wifi-off"></i>載入失敗</div>`; }
+}
+
+function renderUsers(){
+  const el=document.getElementById('page-users');
+  el.innerHTML=`
+    <div class="page-hd">
+      <div><div class="page-title">帳號管理</div><div class="page-sub">管理所有系統使用者與角色配置</div></div>
+      <button class="btn pri" onclick="openAddUserModal()"><i class="ti ti-user-plus"></i> 新增帳號</button>
+    </div>
+    <div class="section-card">
+      <div class="section-hd"><span class="section-title">所有使用者（${USERS.length}）</span></div>
+      ${USERS.map(u=>`<div class="user-row">
+        <div class="av ${avCls(u.id)}" style="width:38px;height:38px;font-size:15px">${u.name[0]}</div>
+        <div class="user-info">
+          <div class="user-name">${u.name}</div>
+          <div class="user-email">${u.email} · 最後登入：${u.lastLogin||'—'}</div>
+        </div>
+        <span class="badge ${ROLE_TAG[u.role]||'tag-eng'}">${ROLE_LBL[u.role]||u.role}</span>
+        <span class="badge ${u.status==='active'?'b-active':'b-inactive'}">${u.status==='active'?'啟用':'停權'}</span>
+        <div style="display:flex;gap:5px;flex-shrink:0">
+          <button class="btn sm" onclick="openEditUserModal('${u.id}')"><i class="ti ti-edit"></i> 編輯</button>
+          ${u.id!==_cu.id?`<button class="btn sm ${u.status==='active'?'warn':'success'}" onclick="doToggleUser('${u.id}')">
+            <i class="ti ti-${u.status==='active'?'user-off':'user-check'}"></i>${u.status==='active'?'停權':'復權'}</button>`:''}
+          ${u.id!==_cu.id?`<button class="btn sm danger" onclick="confirmDeleteUser('${u.id}')"><i class="ti ti-trash"></i></button>`:''}
+        </div>
+      </div>`).join('')}
+    </div>`;
+}
+
+async function doToggleUser(id){
+  const u=USERS.find(x=>x.id===id);if(!u)return;
+  try {
+    const res = await API.toggleUser(id);
+    if(res.success){
+      u.status = res.status;
+      showToast(`${u.name} 已${u.status==='active'?'復權':'停權'}`, u.status==='active'?'success':'warn');
+      renderUsers();
+    } else { showToast(res.error||'操作失敗','error'); }
+  } catch(e){ showToast('連線失敗','error'); }
+}
+
+// ── 所有專案 ──
+async function loadProjs(){
+  showLoading(true,'page-projs');
+  try {
+    const [pr, ur] = await Promise.all([API.getProjects(), API.getUsers()]);
+    PROJECTS = pr.success ? pr.projects : [];
+    USERS    = ur.success ? ur.users    : [];
+    renderProjs();
+  } catch(e){ document.getElementById('page-projs').innerHTML=`<div class="empty"><i class="ti ti-wifi-off"></i>載入失敗</div>`; }
+}
+
+function renderProjs(){
+  const el=document.getElementById('page-projs');
+  const totB=PROJECTS.reduce((a,p)=>a+Number(p.budget||0),0);
+  const engMap={};USERS.forEach(u=>{engMap[u.id]=u.name;});
+  el.innerHTML=`
+    <div class="page-hd">
+      <div><div class="page-title">所有工程專案</div><div class="page-sub">系統管理員擁有所有專案完整 CRUD 權限</div></div>
+    </div>
+    <div class="stats">
+      <div class="stat-card"><div class="stat-val">${PROJECTS.length}</div><div class="stat-lbl">專案總數</div></div>
+      <div class="stat-card"><div class="stat-val">${PROJECTS.filter(p=>p.status==='施工').length}</div><div class="stat-lbl">施工中</div></div>
+      <div class="stat-card"><div class="stat-val" style="font-size:20px">${totB?'$'+Math.round(totB/10000)+'萬':'—'}</div><div class="stat-lbl">預算總額</div></div>
+      <div class="stat-card"><div class="stat-val" style="color:var(--amber)">${PROJECTS.filter(p=>p.applyStatus==='pending').length}</div><div class="stat-lbl">待審核申請</div></div>
+    </div>
+    ${!PROJECTS.length?`<div class="section-card"><div class="empty"><i class="ti ti-folder-off"></i>尚無工程專案</div></div>`:`
+    <div class="section-card" style="padding:0;overflow:hidden">
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th style="min-width:220px">專案名稱</th>
+            <th style="width:90px">負責人</th>
+            <th style="width:84px">狀態</th>
+            <th style="width:84px">申請</th>
+            <th style="width:96px" class="r">預算金額</th>
+            <th style="width:96px" class="r">契約金額</th>
+            <th style="width:90px">完工日</th>
+            <th style="width:80px">操作</th>
+          </tr></thead>
+          <tbody>${PROJECTS.map(p=>`<tr>
+            <td style="font-weight:600">${p.name}</td>
+            <td style="font-size:12px">${engMap[p.mgrId]||p.mgrId||'—'}</td>
+            <td><span class="badge ${SCLS[p.status]||'b-plan'}">${p.status}</span></td>
+            <td><span class="badge ${p.applyStatus==='approved'?'b-active':p.applyStatus==='pending'?'b-pending':'b-inactive'}">${p.applyStatus==='approved'?'核准':p.applyStatus==='pending'?'待審':'退回'}</span></td>
+            <td class="r" style="font-size:12px;font-weight:600">${p.budget?fmt(p.budget):'—'}</td>
+            <td class="r" style="font-size:12px">${p.contract?fmt(p.contract):'—'}</td>
+            <td style="font-size:12px">${p.endDate||'—'}</td>
+            <td><button class="btn sm danger" onclick="doDeleteProj('${p.id}')"><i class="ti ti-trash"></i></button></td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>
+    </div>`}`;
+}
+
+async function doDeleteProj(id){
+  if(!confirm('確定刪除此專案？此操作不可復原。')) return;
+  try {
+    const res = await API.deleteProject(id);
+    if(res.success){ showToast('專案已刪除','success'); loadProjs(); }
+    else showToast(res.error||'刪除失敗','error');
+  } catch(e){ showToast('連線失敗','error'); }
+}
+
+// ── 系統設定（靜態顯示，後續可擴充）──
+function renderConfig(){
+  document.getElementById('page-config').innerHTML=`
+    <div class="page-hd"><div><div class="page-title">系統設定</div><div class="page-sub">Google Sheets 後端連線資訊</div></div></div>
+    <div class="two-col">
+      <div class="section-card">
+        <div class="section-hd"><span class="section-title">後端連線資訊</span></div>
+        ${[
+          {lbl:'後端類型',val:'Google Apps Script'},
+          {lbl:'資料庫',  val:'Google Sheets'},
+          {lbl:'檔案儲存',val:'Google Drive'},
+          {lbl:'連線狀態',val:'✓ 已連線'},
+          {lbl:'API 版本',val:'v6'},
+        ].map(s=>`<div class="setting-item">
+          <div><div class="setting-lbl">${s.lbl}</div></div>
+          <span class="setting-val">${s.val}</span>
+        </div>`).join('')}
+      </div>
+      <div class="section-card">
+        <div class="section-hd"><span class="section-title">帳號安全</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button class="btn" style="justify-content:flex-start" onclick="openChangePwModal()"><i class="ti ti-key"></i> 修改我的密碼</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── Modal 工具 ──
+function userModal(title, fields, onSubmit){
+  document.getElementById('modal-area').innerHTML=`
+    <div class="modal-bg" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <div class="modal-title"><span>${title}</span><button class="btn sm" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+        ${fields}
+        <button class="submit-btn" id="modal-submit-btn"><i class="ti ti-check"></i> 確認</button>
+      </div>
+    </div>`;
+  document.getElementById('modal-submit-btn').onclick = onSubmit;
+}
+
+function openAddUserModal(){
+  userModal('<i class="ti ti-user-plus"></i> 新增帳號',
+    `<div class="field-row">
+      <div class="field"><label>姓名 / 公司名稱 *</label><input id="u-name" type="text" placeholder="例：陳大明"></div>
+      <div class="field"><label>角色 *</label>
+        <select id="u-role"><option>工程師</option><option>主管</option><option>分包商</option><option>系統管理員</option></select>
+      </div>
+    </div>
+    <div class="field"><label>Email *</label><input id="u-email" type="email" placeholder="user@example.com"></div>
+    <div class="field-row">
+      <div class="field"><label>初始密碼 *</label><input id="u-pw" type="password" placeholder="至少 8 碼"></div>
+      <div class="field"><label>確認密碼 *</label><input id="u-pw2" type="password" placeholder="再輸入一次"></div>
+    </div>`,
+    async () => {
+      const name  = document.getElementById('u-name').value.trim();
+      const email = document.getElementById('u-email').value.trim();
+      const role  = ROLE_VAL_TO_KEY[document.getElementById('u-role').value];
+      const pw    = document.getElementById('u-pw').value;
+      const pw2   = document.getElementById('u-pw2').value;
+      if(!name||!email||!pw){ showToast('請填寫所有必填欄位','warn'); return; }
+      if(pw!==pw2){ showToast('兩次密碼不一致','warn'); return; }
+      setBtnLoading('modal-submit-btn', true);
+      try {
+        const res = await API.createUser({name, email, role, password:pw});
+        if(res.success){ closeModal(); showToast(`✓ 帳號「${name}」已建立`,'success'); loadUsers(); }
+        else showToast(res.error||'建立失敗','error');
+      } catch(e){ showToast('連線失敗','error'); }
+      setBtnLoading('modal-submit-btn', false);
     }
+  );
+}
+
+function openEditUserModal(id){
+  const u=USERS.find(x=>x.id===id);if(!u)return;
+  userModal('<i class="ti ti-edit"></i> 編輯帳號',
+    `<div class="field-row">
+      <div class="field"><label>姓名 *</label><input id="e-name" type="text" value="${u.name}"></div>
+      <div class="field"><label>角色 *</label>
+        <select id="e-role">${['工程師','主管','分包商','系統管理員'].map(r=>`<option${ROLE_KEY_TO_VAL[u.role]===r?' selected':''}>${r}</option>`).join('')}</select>
+      </div>
+    </div>
+    <div class="field"><label>Email *</label><input id="e-email" type="email" value="${u.email}"></div>
+    <div class="field-row">
+      <div class="field"><label>新密碼（留空不更改）</label><input id="e-pw" type="password" placeholder="留空則不更改"></div>
+      <div class="field"><label>確認新密碼</label><input id="e-pw2" type="password" placeholder=""></div>
+    </div>`,
+    async () => {
+      const name  = document.getElementById('e-name').value.trim();
+      const email = document.getElementById('e-email').value.trim();
+      const role  = ROLE_VAL_TO_KEY[document.getElementById('e-role').value];
+      const pw    = document.getElementById('e-pw').value;
+      const pw2   = document.getElementById('e-pw2').value;
+      if(!name||!email){ showToast('請填寫必填欄位','warn'); return; }
+      if(pw&&pw!==pw2){ showToast('兩次密碼不一致','warn'); return; }
+      setBtnLoading('modal-submit-btn', true);
+      try {
+        const res = await API.updateUser({id, name, email, role, password:pw||undefined});
+        if(res.success){ closeModal(); showToast(`✓ 帳號「${name}」已更新`,'success'); loadUsers(); }
+        else showToast(res.error||'更新失敗','error');
+      } catch(e){ showToast('連線失敗','error'); }
+      setBtnLoading('modal-submit-btn', false);
+    }
+  );
+}
+
+function confirmDeleteUser(id){
+  const u=USERS.find(x=>x.id===id);if(!u)return;
+  document.getElementById('modal-area').innerHTML=`
+    <div class="modal-bg" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <div class="modal-title"><span style="color:var(--red)"><i class="ti ti-alert-triangle"></i> 確認刪除帳號</span>
+          <button class="btn sm" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+        <div style="background:var(--red-l);border:1px solid #F7C1C1;border-radius:var(--r-sm);padding:14px;font-size:13px;color:var(--red);margin-bottom:16px;line-height:1.6">
+          確定要刪除「<strong>${u.name}</strong>」（${u.email}）？此操作<strong>無法復原</strong>。
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn" onclick="closeModal()">取消</button>
+          <button class="btn danger" id="del-btn" onclick="doDeleteUser('${id}')"
+            style="background:var(--red);color:#fff;border-color:var(--red)"><i class="ti ti-trash"></i> 確認刪除</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function doDeleteUser(id){
+  setBtnLoading('del-btn', true);
+  try {
+    const res = await API.deleteUser(id);
+    if(res.success){ closeModal(); showToast('帳號已刪除','success'); loadUsers(); }
+    else showToast(res.error||'刪除失敗','error');
+  } catch(e){ showToast('連線失敗','error'); }
+}
+
+function openChangePwModal(){
+  userModal('<i class="ti ti-key"></i> 修改密碼',
+    `<div class="field"><label>新密碼 *</label><input id="cp-pw" type="password" placeholder="至少 8 碼"></div>
+     <div class="field"><label>確認新密碼 *</label><input id="cp-pw2" type="password" placeholder="再輸入一次"></div>`,
+    async () => {
+      const pw=document.getElementById('cp-pw').value;
+      const pw2=document.getElementById('cp-pw2').value;
+      if(!pw){ showToast('請輸入新密碼','warn'); return; }
+      if(pw!==pw2){ showToast('兩次密碼不一致','warn'); return; }
+      setBtnLoading('modal-submit-btn', true);
+      try {
+        const res = await API.changePw(_cu.id, pw);
+        if(res.success){ closeModal(); showToast('✓ 密碼已更新，請重新登入','success'); setTimeout(logout,1500); }
+        else showToast(res.error||'更新失敗','error');
+      } catch(e){ showToast('連線失敗','error'); }
+    }
+  );
+}
+
+function closeModal(){ document.getElementById('modal-area').innerHTML=''; }
+
+function setBtnLoading(id, loading){
+  const btn=document.getElementById(id);if(!btn)return;
+  btn.disabled=loading;
+  btn.innerHTML=loading?'<i class="ti ti-loader" style="animation:spin 1s linear infinite"></i> 處理中...':'<i class="ti ti-check"></i> 確認';
+}
+
+// ── 組織層級管理 ──
+let HIER_DATA = { relations:[], users:[] };
+
+async function loadHier() {
+  showLoading(true, 'page-hier');
+  try {
+    const res = await API.getHierarchy();
+    HIER_DATA = res.success ? res : { relations:[], users:[] };
+    renderHier();
+  } catch(e) {
+    document.getElementById('page-hier').innerHTML = '<div class="empty"><i class="ti ti-wifi-off"></i>載入失敗</div>';
   }
 }
 
-// ── 檔案轉 base64 ───────────────────────────────────────────────
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload  = () => resolve(reader.result.split(',')[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+const ROLE_LBL_H = {admin:'系統管理員',manager:'主管',engineer:'工程師',subcontractor:'分包商'};
+const ROLE_TAG_H = {admin:'tag-admin',manager:'tag-mgr',engineer:'tag-eng',subcontractor:'tag-sub'};
+
+function renderHier() {
+  const el = document.getElementById('page-hier');
+  const { relations, users } = HIER_DATA;
+  const activeUsers = (users||[]).filter(u=>u.status==='active');
+
+  el.innerHTML = `
+    <div class="page-hd">
+      <div><div class="page-title">組織層級</div>
+      <div class="page-sub">設定人員的上下級關係，用於審核流程自動派送</div></div>
+      <button class="btn pri" onclick="openAddRelationModal()"><i class="ti ti-plus"></i> 新增層級關係</button>
+    </div>
+
+    <!-- 組織圖 -->
+    <div class="section-card" style="margin-bottom:12px">
+      <div class="section-hd"><span class="section-title">目前層級關係（${relations.length} 筆）</span></div>
+      ${!relations.length ? `<div class="empty"><i class="ti ti-sitemap"></i>尚未設定任何層級關係</div>` :
+        relations.map(r=>`
+        <div class="user-row">
+          <div style="display:flex;align-items:center;gap:8px;flex:1;flex-wrap:wrap">
+            <!-- 上級 -->
+            <div style="display:flex;align-items:center;gap:6px;background:var(--bg);border-radius:var(--r-sm);padding:6px 12px;border:1px solid var(--border-l)">
+              <div class="av ${ROLE_TAG_H[r.supervisorRole]||'av-a'}" style="width:28px;height:28px;font-size:11px">${(r.supervisorName||'?')[0]}</div>
+              <div>
+                <div style="font-size:13px;font-weight:600">${r.supervisorName}</div>
+                <div style="font-size:11px;color:var(--text4)">${ROLE_LBL_H[r.supervisorRole]||r.supervisorRole}</div>
+              </div>
+            </div>
+            <!-- 箭頭 -->
+            <div style="display:flex;align-items:center;gap:4px;color:var(--text3);font-size:12px">
+              <i class="ti ti-arrow-right" style="font-size:16px"></i>
+              <span>上級</span>
+            </div>
+            <!-- 下級 -->
+            <div style="display:flex;align-items:center;gap:6px;background:var(--bg);border-radius:var(--r-sm);padding:6px 12px;border:1px solid var(--border-l)">
+              <div class="av ${ROLE_TAG_H[r.subordinateRole]||'av-b'}" style="width:28px;height:28px;font-size:11px">${(r.subordinateName||'?')[0]}</div>
+              <div>
+                <div style="font-size:13px;font-weight:600">${r.subordinateName}</div>
+                <div style="font-size:11px;color:var(--text4)">${ROLE_LBL_H[r.subordinateRole]||r.subordinateRole}</div>
+              </div>
+            </div>
+          </div>
+          <button class="btn sm danger" onclick="doDeleteRelation('${r.id}')"><i class="ti ti-trash"></i></button>
+        </div>`).join('')}
+    </div>
+
+    <!-- 樹狀圖 -->
+    <div class="section-card">
+      <div class="section-hd"><span class="section-title">組織樹狀圖</span></div>
+      ${buildOrgTree(relations, users)}
+    </div>`;
 }
 
-// ── 格式化工具 ──────────────────────────────────────────────────
-const Fmt = {
-  money: n => n ? '$' + Number(n).toLocaleString() : '—',
-  date:  s => s ? String(s).slice(0,10) : '—',
-  remain:(budget, contract) => {
-    if (!budget && !contract) return null;
-    return budget - contract;
-  },
-  diff: (real, plan) => real - plan,
-  diffStr: d => d === 0 ? '—' : (d > 0 ? '+' : '') + d + '%',
-  progColor: (real, plan) => {
-    const d = real - plan;
-    return d < -10 ? '#A32D2D' : d < 0 ? '#854F0B' : '#185FA5';
-  },
-};
+function buildOrgTree(relations, users) {
+  if (!relations.length) return '<div class="empty" style="padding:1rem"><i class="ti ti-tree"></i>尚無層級資料</div>';
+
+  // 找出所有頂層（沒有上級的人，但有下屬）
+  const subordinateIds = new Set(relations.map(r=>r.subordinateId));
+  const supervisorIds  = new Set(relations.map(r=>r.supervisorId));
+  const topIds = [...supervisorIds].filter(id => !subordinateIds.has(id));
+
+  function buildNode(userId, depth=0) {
+    const user = (users||[]).find(u=>u.id===userId);
+    const name = user ? user.name : userId;
+    const role = user ? user.role : '';
+    const children = relations.filter(r=>r.supervisorId===userId);
+    const indent = depth * 28;
+    return `
+      <div style="margin-left:${indent}px;margin-bottom:6px">
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg);border-radius:var(--r-sm);border:1px solid var(--border-l);width:fit-content">
+          ${depth>0?`<i class="ti ti-corner-down-right" style="color:var(--text4);font-size:14px"></i>`:''}
+          <div class="av ${ROLE_TAG_H[role]||'av-a'}" style="width:26px;height:26px;font-size:10px">${(name||'?')[0]}</div>
+          <div>
+            <div style="font-size:13px;font-weight:600">${name}</div>
+            <div style="font-size:11px;color:var(--text4)">${ROLE_LBL_H[role]||role}</div>
+          </div>
+        </div>
+        ${children.map(c=>buildNode(c.subordinateId, depth+1)).join('')}
+      </div>`;
+  }
+
+  return topIds.map(id=>buildNode(id)).join('') ||
+    '<div class="empty" style="padding:1rem">無法建立樹狀圖</div>';
+}
+
+function openAddRelationModal() {
+  const users = (HIER_DATA.users||[]).filter(u=>u.status==='active');
+  const opts  = users.map(u=>`<option value="${u.id}">${u.name}（${ROLE_LBL_H[u.role]||u.role}）</option>`).join('');
+  document.getElementById('modal-area').innerHTML = `
+    <div class="modal-bg" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <div class="modal-title"><span><i class="ti ti-sitemap"></i> 新增層級關係</span>
+          <button class="btn sm" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+        <div class="field"><label>上級（主管）*</label>
+          <select id="h-sup"><option value="">請選擇...</option>${opts}</select>
+        </div>
+        <div style="text-align:center;padding:8px;color:var(--text4)"><i class="ti ti-arrow-down" style="font-size:20px"></i></div>
+        <div class="field"><label>下級（部屬）*</label>
+          <select id="h-sub"><option value="">請選擇...</option>${opts}</select>
+        </div>
+        <button class="submit-btn" id="h-btn" onclick="doAddRelation()"><i class="ti ti-check"></i> 新增</button>
+      </div>
+    </div>`;
+}
+
+async function doAddRelation() {
+  const sup = document.getElementById('h-sup').value;
+  const sub = document.getElementById('h-sub').value;
+  if (!sup || !sub) { showToast('請選擇上級和下級','warn'); return; }
+  if (sup === sub)  { showToast('上級和下級不能是同一人','warn'); return; }
+  setBtnLoading('h-btn', true);
+  try {
+    const res = await API.createRelation(sup, sub);
+    if (res.success) { closeModal(); showToast('✓ 層級關係已新增','success'); loadHier(); }
+    else showToast(res.error||'新增失敗','error');
+  } catch(e) { showToast('連線失敗','error'); }
+  setBtnLoading('h-btn', false);
+}
+
+async function doDeleteRelation(id) {
+  if (!confirm('確定移除此層級關係？')) return;
+  try {
+    const res = await API.deleteRelation(id);
+    if (res.success) { showToast('✓ 已移除','success'); loadHier(); }
+    else showToast(res.error||'移除失敗','error');
+  } catch(e) { showToast('連線失敗','error'); }
+}
+
+// spin 動畫
+const _s=document.createElement('style');
+_s.textContent='@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}';
+document.head.appendChild(_s);
+
+// ── 啟動 ──
+goPage('dash');
+</script>
+</body>
+</html>
