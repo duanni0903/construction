@@ -26,7 +26,7 @@
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
 
 /* ── 頂部導覽 ── */
-.topnav{background:var(--navy);padding:0 20px;height:52px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.topnav{background:var(--navy);padding:0 32px;height:52px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.25)}
 .logo{display:flex;align-items:center;gap:8px;color:#fff;font-size:14px;font-weight:600;letter-spacing:.01em}
 .logo-icon{width:28px;height:28px;background:var(--blue);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px}
 .breadcrumb{display:flex;align-items:center;gap:6px;margin-left:12px;padding-left:12px;border-left:1px solid rgba(255,255,255,.15)}
@@ -58,7 +58,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans
 .btn.readonly:hover{background:var(--bg);border-color:var(--border-l);color:var(--text4)}
 
 /* ── 版面 ── */
-.page{display:none;max-width:1100px;margin:0 auto;padding:20px}
+.page{display:none;max-width:1400px;margin:0 auto;padding:20px 32px}
 .page.active{display:block}
 .page-hd{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap}
 .page-title{font-size:20px;font-weight:700;color:var(--text);letter-spacing:-.01em}
@@ -304,8 +304,8 @@ tr.row-other td:first-child{border-left:3px solid transparent}
     <table>
       <thead><tr>
         <th style="width:60px">編號</th>
-        <th style="width:90px">工程類型</th>
         <th style="min-width:220px">專案名稱</th>
+        <th style="width:90px">工程類型</th>
         <th style="width:86px">負責人</th>
         <th style="width:84px">狀態</th>
         <th style="width:106px">預計進度</th>
@@ -538,7 +538,6 @@ function renderTable() {
     const nw  = noWork(p);
     return `<tr class="proj-row row-${own?'mine':'other'}" onclick="goPage('detail','${p.id}')">
       <td style="font-size:12px;font-weight:700;color:var(--blue);text-align:center">${p.projNo||'—'}</td>
-      <td style="font-size:11px;color:var(--text3)">${p.projType||'—'}</td>
       <td>
         <div class="name-cell">
           <i class="ti ti-chevron-right" style="font-size:12px;color:var(--text4);flex-shrink:0"></i>
@@ -549,6 +548,7 @@ function renderTable() {
           ${p.applyStatus==='draft' ? `<span style="font-size:10px;padding:2px 7px;border-radius:20px;background:var(--bg);color:var(--text4);border:1px solid var(--border);flex-shrink:0"><i class="ti ti-pencil" style="font-size:9px"></i> 草稿</span>` : ''}
         </div>
       </td>
+      <td style="font-size:11px;color:var(--text3)">${p.projType||'—'}</td>
       <td>
         <div class="mgr-chip${filterMgr===p.mgrId?' hl':''}" onclick="clickMgr('${p.mgrId}',event)" title="點擊篩選 ${p.mgrName||''} 的專案">
           <div class="av ${e.cls||'av-a'}" style="width:22px;height:22px;font-size:9px">${(p.mgrName||'?')[0]}</div>
