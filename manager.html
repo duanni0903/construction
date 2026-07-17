@@ -640,7 +640,8 @@ function exportMgrPDF(projId) {
     td{border:1px solid #DDE1E9;padding:6px 8px;vertical-align:top;font-size:12px;word-break:break-word}
     .title{font-size:16px;font-weight:700;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #1B2A3B}
     .section{font-size:10px;font-weight:700;color:#718096;text-transform:uppercase;letter-spacing:.08em;margin:10px 0 4px;border-left:3px solid #1B2A3B;padding-left:6px}
-    @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+    @media screen{body{max-width:900px;margin:24px auto;padding:0 48px}}
+    @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;max-width:none;margin:0;padding:0}}
   </style></head><body>
   <div class="title">工作報告</div>
   <table>
