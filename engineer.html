@@ -404,9 +404,11 @@ let filterStatus='全部', filterMgr='', activeTab={}, uploading={}, activeProjI
 // ── 初始載入 ──
 async function init(retry=0) {
   try {
-    // 分開呼叫避免 Promise.all 互相影響
-    const pr = await callAPI({action:'getProjects'});
-    const ur = await callAPI({action:'getUsers'});
+    // 並行呼叫加快速度
+    const [pr, ur] = await Promise.all([
+      callAPI({action:'getProjects'}),
+      callAPI({action:'getUsers'})
+    ]);
 
     PROJECTS  = pr.success ? pr.projects : [];
     ALL_USERS = ur.success ? ur.users    : [];
@@ -1235,10 +1237,27 @@ async function doUpdateProj(id) {
     if (res.success) {
       closeModal();
       showToast('✓ 專案已更新','success');
-      const pr = await API.getProjects();
-      PROJECTS = pr.success ? pr.projects : PROJECTS;
+      // 直接更新本地資料，不重新抓 API（加快速度）
+      const p = PROJECTS.find(x=>x.id===id);
+      if (p) {
+        p.name     = name;
+        p.projType = projType;
+        p.status   = status;
+        p.planPct  = planPct;
+        p.realPct  = realPct;
+        p.budget   = budget;
+        p.contract = contract;
+        p.startDate= startDate;
+        p.endDate  = endDate;
+      }
       delete TASKS_CACHE[id];
-      goPage('detail', id);
+      closeModal();
+      showToast('✓ 專案已更新', 'success');
+      if (curPage === 'detail') {
+        renderDetailPage(id);
+      } else {
+        renderStats(); renderFilters(); renderTable();
+      }
     } else showToast(res.error||'更新失敗','error');
   } catch(e) { showToast('連線失敗','error'); }
 }
