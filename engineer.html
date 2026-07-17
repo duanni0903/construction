@@ -979,8 +979,9 @@ function exportReportPDF(projId) {
     .title{font-size:16px;font-weight:700;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #1B2A3B}
     .section{font-size:10px;font-weight:700;color:#718096;text-transform:uppercase;letter-spacing:.08em;margin:10px 0 4px;border-left:3px solid #1B2A3B;padding-left:6px}
     .hd-th{width:72px}
+    @media screen{body{max-width:900px;margin:24px auto;padding:0 48px}}
     @media print{
-      body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      body{-webkit-print-color-adjust:exact;print-color-adjust:exact;max-width:none;margin:0;padding:0}
       .no-print{display:none}
     }
   </style></head><body>
