@@ -1055,8 +1055,7 @@ function exportReportWord(projId) {
     <span class="section">工作項目</span>
     <table><tr><td style="font-weight:bold;font-size:11pt">${d.p.name}</td></tr></table>
     <span class="section">需求說明</span>
-    <table><tr><td style="line-height:1.7">${d.req.replace(/
-/g,'<br>')}</td></tr></table>
+    <table><tr><td style="line-height:1.7">${d.req.split('\n').join('<br>')}</td></tr></table>
     <span class="section">進度說明</span>
     <table style="table-layout:fixed;width:100%">
       <colgroup><col style="width:90pt"><col></colgroup>
@@ -1064,8 +1063,7 @@ function exportReportWord(projId) {
       ${progRows}
     </table>
     <span class="section">待處置事項</span>
-    <table><tr><td style="line-height:1.7">${d.pending.replace(/
-/g,'<br>')}</td></tr></table>
+    <table><tr><td style="line-height:1.7">${d.pending.split('\n').join('<br>')}</td></tr></table>
     </div>
     </body></html>`;
 
