@@ -19,7 +19,7 @@
   --r:10px;--r-sm:6px;
 }
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);font-size:14px;min-height:100vh}
-.topnav{background:var(--navy);padding:0 20px;height:52px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.topnav{background:var(--navy);padding:0 32px;height:52px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.25)}
 .logo{display:flex;align-items:center;gap:8px;color:#fff;font-size:14px;font-weight:600;letter-spacing:.01em}
 .logo-icon{width:28px;height:28px;background:var(--blue);border-radius:6px;display:flex;align-items:center;justify-content:center}
 .breadcrumb{display:flex;align-items:center;gap:6px;margin-left:12px;padding-left:12px;border-left:1px solid rgba(255,255,255,.15)}
@@ -42,7 +42,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans
 .btn.danger:hover{background:var(--red-l)}
 .btn.warn{color:var(--amber);border-color:#FAC775}
 .btn.warn:hover{background:var(--amber-l)}
-.page{display:none;max-width:1100px;margin:0 auto;padding:20px}
+.page{display:none;max-width:1400px;margin:0 auto;padding:20px 32px}
 .page.active{display:block}
 .page-hd{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap}
 .page-title{font-size:20px;font-weight:700;color:var(--text);letter-spacing:-.01em}
@@ -304,7 +304,9 @@ function renderProjs(){
       <div class="table-wrap">
         <table>
           <thead><tr>
+            <th style="width:60px">編號</th>
             <th style="min-width:220px">專案名稱</th>
+            <th style="width:90px">工程類型</th>
             <th style="width:90px">負責人</th>
             <th style="width:84px">狀態</th>
             <th style="width:84px">申請</th>
@@ -314,7 +316,9 @@ function renderProjs(){
             <th style="width:80px">操作</th>
           </tr></thead>
           <tbody>${PROJECTS.map(p=>`<tr>
+            <td style="font-size:12px;font-weight:700;color:var(--blue);text-align:center">${p.projNo||'—'}</td>
             <td style="font-weight:600">${p.name}</td>
+            <td style="font-size:11px;color:var(--text3)">${p.projType||'—'}</td>
             <td style="font-size:12px">${engMap[p.mgrId]||p.mgrId||'—'}</td>
             <td><span class="badge ${SCLS[p.status]||'b-plan'}">${p.status}</span></td>
             <td><span class="badge ${p.applyStatus==='approved'?'b-active':p.applyStatus==='pending'?'b-pending':'b-inactive'}">${p.applyStatus==='approved'?'核准':p.applyStatus==='pending'?'待審':'退回'}</span></td>
