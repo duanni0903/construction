@@ -960,43 +960,56 @@ function exportReportPDF(projId) {
   const d = getReportData(projId);
   if (!d) { showToast('請先建立工作報告', 'warn'); return; }
 
+  const progRows = d.progress.map(pg =>
+    `<tr>
+      <td style="width:90px;max-width:90px;white-space:nowrap;overflow:hidden;color:#555;font-size:11px;padding:5px 8px;border:1px solid #DDE1E9">${pg.date}</td>
+      <td style="white-space:pre-wrap;line-height:1.6;padding:5px 8px;border:1px solid #DDE1E9;font-size:12px">${pg.note}</td>
+    </tr>`
+  ).join('') || '<tr><td colspan="2" style="padding:5px 8px;border:1px solid #DDE1E9;color:#999">尚無進度記錄</td></tr>';
+
   const html = `<!DOCTYPE html><html lang="zh-TW"><head><meta charset="UTF-8">
   <title>工作報告 - ${d.p.name}</title>
   <style>
-    body{font-family:'Noto Sans TC',sans-serif;font-size:13px;color:#18232F;margin:0;padding:20px}
-    table{width:100%;border-collapse:collapse;margin-bottom:16px}
-    th,td{border:1px solid #DDE1E9;padding:8px 12px;text-align:left;vertical-align:top}
-    th{background:#F2F4F7;font-weight:600;width:100px;white-space:nowrap}
-    .title{font-size:18px;font-weight:700;margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid #1B2A3B}
-    .section{font-size:12px;font-weight:600;color:#718096;text-transform:uppercase;letter-spacing:.05em;margin:14px 0 6px}
-    .date-col{width:90px;white-space:nowrap;color:#555}
-    @media print{body{padding:0}}
+    @page{size:A4 portrait;margin:15mm 12mm}
+    *{box-sizing:border-box}
+    body{font-family:'Noto Sans TC','微軟正黑體',sans-serif;font-size:12px;color:#18232F;margin:0;padding:0;width:100%}
+    table{width:100%;border-collapse:collapse;margin-bottom:12px;table-layout:fixed}
+    th{background:#F2F4F7;border:1px solid #DDE1E9;padding:6px 8px;text-align:left;font-weight:600;font-size:11px;white-space:nowrap}
+    td{border:1px solid #DDE1E9;padding:6px 8px;vertical-align:top;font-size:12px;word-break:break-word}
+    .title{font-size:16px;font-weight:700;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #1B2A3B}
+    .section{font-size:10px;font-weight:700;color:#718096;text-transform:uppercase;letter-spacing:.08em;margin:10px 0 4px;border-left:3px solid #1B2A3B;padding-left:6px}
+    .hd-th{width:72px}
+    @media print{
+      body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .no-print{display:none}
+    }
   </style></head><body>
   <div class="title">工作報告</div>
   <table>
-    <tr><th>案件編號</th><td>${d.caseNo}</td><th>供應商</th><td>${d.vendor}</td></tr>
-    <tr><th>交辦來源</th><td>${d.source}</td><th>週期</th><td>${d.period}</td></tr>
-    <tr><th>案件狀態</th><td>${d.status}</td><th>持續追蹤</th><td>${d.tracking}</td></tr>
-    <tr><th>DRI</th><td>${d.dri}</td><th>經辦單位</th><td>${d.unit}</td></tr>
+    <colgroup><col style="width:72px"><col><col style="width:72px"><col></colgroup>
+    <tr><th class="hd-th">案件編號</th><td>${d.caseNo}</td><th class="hd-th">供應商</th><td>${d.vendor}</td></tr>
+    <tr><th class="hd-th">交辦來源</th><td>${d.source}</td><th class="hd-th">週期</th><td>${d.period}</td></tr>
+    <tr><th class="hd-th">案件狀態</th><td>${d.status}</td><th class="hd-th">持續追蹤</th><td>${d.tracking}</td></tr>
+    <tr><th class="hd-th">DRI</th><td>${d.dri}</td><th class="hd-th">經辦單位</th><td>${d.unit}</td></tr>
   </table>
   <div class="section">工作項目</div>
-  <table><tr><td style="font-weight:600">${d.p.name}</td></tr></table>
+  <table><tr><td style="font-weight:600;font-size:13px">${d.p.name}</td></tr></table>
   <div class="section">需求說明</div>
-  <table><tr><td style="white-space:pre-wrap;line-height:1.6">${d.req}</td></tr></table>
+  <table><tr><td style="white-space:pre-wrap;line-height:1.7">${d.req}</td></tr></table>
   <div class="section">進度說明</div>
   <table style="table-layout:fixed">
-    <colgroup><col style="width:100px"><col></colgroup>
-    <tr><th style="width:100px">日期</th><th>說明</th></tr>
-    ${d.progress.map(pg=>`<tr><td style="width:100px;white-space:nowrap;color:#555">${pg.date}</td><td style="white-space:pre-wrap;line-height:1.6">${pg.note}</td></tr>`).join('')||'<tr><td colspan="2">—</td></tr>'}
+    <colgroup><col style="width:90px"><col></colgroup>
+    <tr><th style="width:90px">日期</th><th>說明</th></tr>
+    ${progRows}
   </table>
   <div class="section">待處置事項</div>
-  <table><tr><td style="white-space:pre-wrap;line-height:1.6">${d.pending}</td></tr></table>
+  <table><tr><td style="white-space:pre-wrap;line-height:1.7">${d.pending}</td></tr></table>
   </body></html>`;
 
   const win = window.open('', '_blank');
   win.document.write(html);
   win.document.close();
-  setTimeout(() => win.print(), 500);
+  setTimeout(() => win.print(), 800);
 }
 
 function exportReportWord(projId) {
