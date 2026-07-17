@@ -1018,52 +1018,63 @@ function exportReportWord(projId) {
 
   const progRows = d.progress.map(pg =>
     `<tr>
-      <td style="width:100px;white-space:nowrap;color:#555;padding:7px 10px;border:1px solid #DDE1E9">${pg.date}</td>
-      <td style="white-space:pre-wrap;line-height:1.6;padding:7px 10px;border:1px solid #DDE1E9">${pg.note}</td>
+      <td style="width:90pt;white-space:nowrap;color:#555555;font-size:10pt;padding:4pt 6pt;border:1pt solid #DDE1E9;vertical-align:top">${pg.date}</td>
+      <td style="font-size:11pt;padding:4pt 6pt;border:1pt solid #DDE1E9;vertical-align:top;line-height:1.6">${pg.note.replace(/
+/g,'<br>')}</td>
     </tr>`
-  ).join('') || '<tr><td colspan="2" style="border:1px solid #DDE1E9;padding:7px 10px">—</td></tr>';
-
-  const sharedStyle = `
-    body{font-family:'Noto Sans TC','微軟正黑體',sans-serif;font-size:13px;color:#18232F;margin:2cm}
-    h1{font-size:18px;font-weight:700;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #1B2A3B}
-    .section{font-size:11px;font-weight:600;color:#718096;text-transform:uppercase;letter-spacing:.05em;margin:14px 0 5px}
-    table{width:100%;border-collapse:collapse;margin-bottom:14px}
-    th{background:#F2F4F7;border:1px solid #DDE1E9;padding:7px 10px;font-weight:600;width:90px;white-space:nowrap;font-size:12px}
-    td{border:1px solid #DDE1E9;padding:7px 10px;vertical-align:top;font-size:13px}
-    .date-col{width:95px;white-space:nowrap;color:#555;font-size:12px}
-  `;
+  ).join('') || '<tr><td colspan="2" style="padding:4pt 6pt;border:1pt solid #DDE1E9;color:#999999">尚無進度記錄</td></tr>';
 
   const html = `
     <html xmlns:o="urn:schemas-microsoft-com:office:office"
           xmlns:w="urn:schemas-microsoft-com:office:word"
           xmlns="http://www.w3.org/TR/REC-html40">
-    <head><meta charset="UTF-8"><style>${sharedStyle}</style></head><body>
+    <head>
+      <meta charset="UTF-8">
+      <!--[if gte mso 9]><xml>
+        <w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument>
+      </xml><![endif]-->
+      <style>
+        @page Section1{size:21cm 29.7cm;margin:2cm 1.5cm}
+        div.Section1{page:Section1}
+        body{font-family:'微軟正黑體','Noto Sans TC',sans-serif;font-size:11pt;color:#18232F;margin:0}
+        h1{font-size:16pt;font-weight:bold;border-bottom:2pt solid #1B2A3B;padding-bottom:6pt;margin:0 0 12pt}
+        .section{font-size:9pt;font-weight:bold;color:#666666;margin:10pt 0 4pt;border-left:3pt solid #1B2A3B;padding-left:5pt;display:block}
+        table{width:100%;border-collapse:collapse;margin-bottom:10pt;font-size:10pt}
+        th{background:#F2F4F7;border:1pt solid #DDE1E9;padding:5pt 7pt;text-align:left;font-weight:bold;font-size:9pt;white-space:nowrap;width:65pt}
+        td{border:1pt solid #DDE1E9;padding:5pt 7pt;vertical-align:top;font-size:10pt}
+      </style>
+    </head>
+    <body>
+    <div class="Section1">
     <h1>工作報告</h1>
     <table>
-      <tr><th>案件編號</th><td>${d.caseNo}</td><th>供應商</th><td>${d.vendor}</td></tr>
+      <tr><th style="width:65pt">案件編號</th><td>${d.caseNo}</td><th style="width:65pt">供應商</th><td>${d.vendor}</td></tr>
       <tr><th>交辦來源</th><td>${d.source}</td><th>週期</th><td>${d.period}</td></tr>
       <tr><th>案件狀態</th><td>${d.status}</td><th>持續追蹤</th><td>${d.tracking}</td></tr>
       <tr><th>DRI</th><td>${d.dri}</td><th>經辦單位</th><td>${d.unit}</td></tr>
     </table>
-    <div class="section">工作項目</div>
-    <table><tr><td style="font-weight:600">${d.p.name}</td></tr></table>
-    <div class="section">需求說明</div>
-    <table><tr><td style="white-space:pre-wrap;line-height:1.7">${d.req}</td></tr></table>
-    <div class="section">進度說明</div>
+    <span class="section">工作項目</span>
+    <table><tr><td style="font-weight:bold;font-size:11pt">${d.p.name}</td></tr></table>
+    <span class="section">需求說明</span>
+    <table><tr><td style="line-height:1.7">${d.req.replace(/
+/g,'<br>')}</td></tr></table>
+    <span class="section">進度說明</span>
     <table style="table-layout:fixed;width:100%">
-      <colgroup><col style="width:100px"><col></colgroup>
-      <tr><th style="width:100px">日期</th><th>說明</th></tr>
+      <colgroup><col style="width:90pt"><col></colgroup>
+      <tr><th style="width:90pt">日期</th><th>說明</th></tr>
       ${progRows}
     </table>
-    <div class="section">待處置事項</div>
-    <table><tr><td style="white-space:pre-wrap;line-height:1.7">${d.pending}</td></tr></table>
+    <span class="section">待處置事項</span>
+    <table><tr><td style="line-height:1.7">${d.pending.replace(/
+/g,'<br>')}</td></tr></table>
+    </div>
     </body></html>`;
 
-  const blob = new Blob([html], { type: 'application/msword;charset=utf-8' });
+  const blob = new Blob(['﻿' + html], { type: 'application/msword;charset=utf-8' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href     = url;
-  a.download = `工作報告_${d.p.name}_${new Date().toLocaleDateString('zh-TW').replace(/\//g,'-')}.doc`;
+  a.download = '工作報告_' + d.p.name + '_' + new Date().toLocaleDateString('zh-TW').replace(/\//g,'-') + '.doc';
   a.click();
   URL.revokeObjectURL(url);
   showToast('✓ Word 檔案已下載', 'success');
