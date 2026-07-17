@@ -303,7 +303,9 @@ tr.row-other td:first-child{border-left:3px solid transparent}
   <div class="table-wrap">
     <table>
       <thead><tr>
-        <th style="min-width:260px">專案名稱</th>
+        <th style="width:60px">編號</th>
+        <th style="width:90px">工程類型</th>
+        <th style="min-width:220px">專案名稱</th>
         <th style="width:86px">負責人</th>
         <th style="width:84px">狀態</th>
         <th style="width:106px">預計進度</th>
@@ -535,6 +537,8 @@ function renderTable() {
     const rem = remain(p);
     const nw  = noWork(p);
     return `<tr class="proj-row row-${own?'mine':'other'}" onclick="goPage('detail','${p.id}')">
+      <td style="font-size:12px;font-weight:700;color:var(--blue);text-align:center">${p.projNo||'—'}</td>
+      <td style="font-size:11px;color:var(--text3)">${p.projType||'—'}</td>
       <td>
         <div class="name-cell">
           <i class="ti ti-chevron-right" style="font-size:12px;color:var(--text4);flex-shrink:0"></i>
@@ -1074,8 +1078,9 @@ function drawNewProj() {
 
   let c = '';
   if (step===1) {
+    const _types=['機房新建','辦公室整修','廁所整修','門市整修','其他'];
     c=`<div class="field"><label>工程名稱 *</label><input id="np-name" placeholder="例：台北南三機房擴建工程" value="${_npData.name}"></div>
-       <div class="field-row"><div class="field"><label>工程類型</label><select id="np-type"><option${_npData.type==='機房新建'?' selected':''}>機房新建</option><option${_npData.type==='辦公室裝修'?' selected':''}>辦公室裝修</option><option${_npData.type==='外牆修繕'?' selected':''}>外牆修繕</option><option${_npData.type==='機電工程'?' selected':''}>機電工程</option></select></div>
+       <div class="field-row"><div class="field"><label>工程類型</label><select id="np-type">${_types.map(t=>`<option${_npData.type===t?' selected':''}>${t}</option>`).join('')}</select></div>
        <div class="field"><label>所在地</label><input id="np-loc" placeholder="例：台北市信義區" value="${_npData.loc}"></div></div>
        <div class="field"><label>工程說明</label><textarea id="np-desc" placeholder="簡要說明工程範圍與需求...">${_npData.desc}</textarea></div>`;
   } else if (step===2) {
@@ -1160,14 +1165,15 @@ async function doWithdrawProj(id) {
 }
 
 async function doCreateProj() {
-  const name  = _npData.name?.trim();
-  const start = _npData.start;
-  const end   = _npData.end;
-  const budget= _npData.budget;
+  const name     = _npData.name?.trim();
+  const start    = _npData.start;
+  const end      = _npData.end;
+  const budget   = _npData.budget;
+  const projType = _npData.type || '其他';
   if (!name) { showToast('請填寫工程名稱','warn'); return; }
   setBtnLoading('np-submit', true);
   try {
-    const res = await API.createProject({ name, startDate:start, endDate:end, budget:Number(budget)||0, mgrId: ME });
+    const res = await API.createProject({ name, projType, startDate:start, endDate:end, budget:Number(budget)||0, mgrId: ME });
     if (res.success) {
       closeModal();
       showToast('✓ 申請已送出，等待主管審核','success');
@@ -1186,7 +1192,12 @@ function openEditProjModal(id) {
     <div class="modal-bg" onclick="void(0)">
       <div class="modal">
         <div class="modal-title"><span><i class="ti ti-edit"></i> 編輯專案</span><button class="btn sm" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
-        <div class="field"><label>工程名稱 *</label><input id="ep-name" value="${p.name}"></div>
+        <div class="field-row">
+          <div class="field"><label>工程名稱 *</label><input id="ep-name" value="${p.name}"></div>
+          <div class="field"><label>工程類型</label>
+            <select id="ep-type">${['機房新建','辦公室整修','廁所整修','門市整修','其他'].map(t=>`<option${p.projType===t?' selected':''}>${t}</option>`).join('')}</select>
+          </div>
+        </div>
         <div class="field"><label>專案狀態</label>
           <select id="ep-status">${['規劃設計','工程發包','施工','驗收'].map(s=>`<option${p.status===s?' selected':''}>${s}</option>`).join('')}</select>
         </div>
@@ -1208,8 +1219,9 @@ function openEditProjModal(id) {
 }
 
 async function doUpdateProj(id) {
-  const name    = document.getElementById('ep-name').value.trim();
-  const status  = document.getElementById('ep-status').value;
+  const name     = document.getElementById('ep-name').value.trim();
+  const projType = document.getElementById('ep-type').value;
+  const status   = document.getElementById('ep-status').value;
   const planPct = Number(document.getElementById('ep-plan').value)||0;
   const realPct = Number(document.getElementById('ep-real').value)||0;
   const budget  = Number(document.getElementById('ep-budget').value)||0;
@@ -1219,7 +1231,7 @@ async function doUpdateProj(id) {
   if (!name) { showToast('請填寫工程名稱','warn'); return; }
   setBtnLoading('ep-submit', true);
   try {
-    const res = await API.updateProject({ id, name, status, planPct, realPct, budget, contract, startDate, endDate });
+    const res = await API.updateProject({ id, name, projType, status, planPct, realPct, budget, contract, startDate, endDate });
     if (res.success) {
       closeModal();
       showToast('✓ 專案已更新','success');
