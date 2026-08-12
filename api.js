@@ -135,6 +135,10 @@ const API = {
   createRelation: (supervisorId, subordinateId) => writeAPI('createRelation', { supervisorId, subordinateId }),
   deleteRelation: (id) => writeAPI('deleteRelation', { id }),
 
+  // 專案總表
+  getMasterSheet:     () => callAPI({ action:'getMasterSheet' }),
+  refreshMasterSheet: () => writeAPI('refreshMasterSheet', {}),
+
   // 工作報告
   getReports:   (projectId) => callAPI({ action:'getReports', projectId }),
   createReport: (data) => writeAPI('createReport', data),
