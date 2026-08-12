@@ -74,7 +74,16 @@ const ROLE_FILE = {
   engineer:'engineer.html', subcontractor:'subcontractor.html'
 };
 
+// 功能開關：分包商功能目前停用，日後要恢復把這個改回 true 即可（不用重寫程式碼）
+const FEATURE_SUBCONTRACTOR = false;
+
 function redirectByRole(role) {
+  if (role === 'subcontractor' && !FEATURE_SUBCONTRACTOR) {
+    const errEl = document.getElementById('err');
+    if (errEl) { errEl.textContent = '分包商功能目前暫停使用中，請洽系統管理員'; errEl.style.display = 'block'; }
+    Auth.clear();
+    return;
+  }
   const file = ROLE_FILE[role] || 'login.html';
   // replace 不留歷史記錄，避免上一頁回到登入頁
   window.location.replace(file + '?t=' + Date.now());
