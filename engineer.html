@@ -299,7 +299,7 @@ tr.row-other td:first-child{border-left:3px solid transparent}
     <button class="btn pri" onclick="openNewProjModal()"><i class="ti ti-plus"></i> 申請新專案</button>
   </div>
   <div class="master-bar">
-    <button class="master-btn" onclick="openMasterSheetModal()"><i class="ti ti-table-export"></i> 下載@01各機構需求單彙整表 <span class="mb-sub">全專案彙總 Excel</span></button>
+    <button class="master-btn" onclick="directDownloadMasterSheet()" id="master-dl-btn"><i class="ti ti-table-export"></i> 下載@01各機構需求單彙整表 <span class="mb-sub">全專案彙總 Excel</span></button>
   </div>
   <div class="stats" id="stats"></div>
   <div id="alert-area"></div>
@@ -1635,6 +1635,31 @@ function closeModal() { document.getElementById('modal-area').innerHTML=''; }
 
 /* ══ 專案總表：預覽 + 下載 ══ */
 let _masterData = null;
+
+async function directDownloadMasterSheet() {
+  const btn = document.getElementById('master-dl-btn');
+  const originalHtml = btn ? btn.innerHTML : '';
+  if (btn) { btn.innerHTML = `<i class="ti ti-loader" style="animation:spin 1s linear infinite"></i> 下載中...`; btn.style.pointerEvents = 'none'; }
+  try {
+    const res = await API.exportMasterXlsx();
+    if (!res.success) { showToast(res.error||'下載失敗','error'); return; }
+    const byteChars = atob(res.base64);
+    const byteNums = new Array(byteChars.length);
+    for (let i = 0; i < byteChars.length; i++) byteNums[i] = byteChars.charCodeAt(i);
+    const byteArray = new Uint8Array(byteNums);
+    const blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = res.filename || `@01各機構需求單彙整表_${new Date().toISOString().slice(0,10)}.xlsx`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch(e) {
+    showToast('連線失敗','error');
+  } finally {
+    if (btn) { btn.innerHTML = originalHtml; btn.style.pointerEvents = ''; }
+  }
+}
 
 async function openMasterSheetModal() {
   document.getElementById('modal-area').innerHTML = `
