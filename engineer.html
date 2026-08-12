@@ -1165,11 +1165,11 @@ async function doReviewLog(id, approved) {
 
 /* ══ 申請新專案 Modal ══ */
 let _npStep = 1;
-let _npData = {name:'', type:'機房新建', loc:'', desc:'', start:'', end:'', budget:'', pri:'正常', reportOrg:'', notifyMethod:''};
+let _npData = {name:'', type:'機房新建', loc:'', desc:'', start:'', end:'', budget:'', pri:'正常', reportOrg:'', notifyMethod:'', reportDate:''};
 
 function openNewProjModal() {
   _npStep = 1;
-  _npData = {name:'', type:'機房新建', loc:'', desc:'', start:'', end:'', budget:'', pri:'正常', reportOrg:'', notifyMethod:''};
+  _npData = {name:'', type:'機房新建', loc:'', desc:'', start:'', end:'', budget:'', pri:'正常', reportOrg:'', notifyMethod:'', reportDate:''};
   drawNewProj();
 }
 
@@ -1184,6 +1184,7 @@ function saveNpData() {
   if (document.getElementById('np-pri'))     _npData.pri    = document.getElementById('np-pri').value;
   if (document.getElementById('np-org'))     _npData.reportOrg    = document.getElementById('np-org').value;
   if (document.getElementById('np-notify'))  _npData.notifyMethod = document.getElementById('np-notify').value;
+  if (document.getElementById('np-rdate'))   _npData.reportDate   = document.getElementById('np-rdate').value;
 }
 
 function drawNewProj() {
@@ -1203,6 +1204,7 @@ function drawNewProj() {
        <div class="field"><label>所在地</label><input id="np-loc" placeholder="例：台北市信義區" value="${_npData.loc}"></div></div>
        <div class="field-row"><div class="field"><label>提報機構名稱</label><input id="np-org" placeholder="例：台北營運處" value="${_npData.reportOrg}"></div>
        <div class="field"><label>通知方式</label><select id="np-notify"><option value=""${!_npData.notifyMethod?' selected':''}>請選擇</option>${_notifyMethods.map(m=>`<option${_npData.notifyMethod===m?' selected':''}>${m}</option>`).join('')}</select></div></div>
+       <div class="field"><label>需求單提報時間</label><input type="date" id="np-rdate" value="${_npData.reportDate}"></div>
        <div class="field"><label>需求說明</label><textarea id="np-desc" placeholder="簡要說明工程範圍與需求...">${_npData.desc}</textarea></div>`;
   } else if (step===2) {
     c=`<div class="field-row">
@@ -1222,6 +1224,7 @@ function drawNewProj() {
     c=`<div class="alert alert-ok"><i class="ti ti-check-circle" style="font-size:15px;flex-shrink:0"></i><span>確認後申請將送交主管審核。</span></div>
        <div style="background:var(--bg);border-radius:var(--r-sm);padding:14px;font-size:13px;line-height:2.2;border:1px solid var(--border-l)">
          <div style="display:flex;justify-content:space-between"><span style="color:var(--text3)">工程名稱</span><strong>${name}</strong></div>
+         <div style="display:flex;justify-content:space-between"><span style="color:var(--text3)">需求單提報時間</span><span>${_npData.reportDate||'—'}</span></div>
          <div style="display:flex;justify-content:space-between"><span style="color:var(--text3)">提報機構名稱</span><span>${_npData.reportOrg||'—'}</span></div>
          <div style="display:flex;justify-content:space-between"><span style="color:var(--text3)">通知方式</span><span>${_npData.notifyMethod||'—'}</span></div>
          <div style="display:flex;justify-content:space-between"><span style="color:var(--text3)">預計開工</span><span>${start}</span></div>
@@ -1298,7 +1301,7 @@ async function doCreateProj() {
   setBtnLoading('np-submit', true);
   try {
     const requirement = _npData.desc || '';
-    const res = await API.createProject({ name, projType, requirement, startDate:start, endDate:end, budget:Number(budget)||0, mgrId: ME, reportOrg: _npData.reportOrg||'', notifyMethod: _npData.notifyMethod||'' });
+    const res = await API.createProject({ name, projType, requirement, startDate:start, endDate:end, budget:Number(budget)||0, mgrId: ME, reportOrg: _npData.reportOrg||'', notifyMethod: _npData.notifyMethod||'', reportDate: _npData.reportDate||'' });
     if (res.success) {
       closeModal();
       showToast('✓ 申請已送出，等待主管審核','success');
