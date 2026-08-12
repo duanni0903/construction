@@ -64,8 +64,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans
 .av-c{background:#F5C6D0;color:#72243E}
 .av-d{background:#FAD7A0;color:#633806}
 .av-e{background:#D5D2F9;color:#3C3489}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px}
+.stat-card.action{cursor:pointer;display:flex;flex-direction:column;justify-content:center;align-items:flex-start;transition:border-color .15s,box-shadow .15s}
+.stat-card.action:hover{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue)}
+.stat-card.action .stat-lbl{color:var(--blue)}
 .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px}
+.modal-bg{position:fixed;inset:0;background:rgba(15,20,28,.55);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px}
+.modal{background:var(--surface);border-radius:var(--r);padding:20px;max-width:560px;width:100%;max-height:88vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-title{display:flex;justify-content:space-between;align-items:center;font-size:15px;font-weight:600;margin-bottom:14px}
 .stat-val{font-size:26px;font-weight:700;color:var(--text);line-height:1;margin-bottom:4px}
 .stat-lbl{font-size:12px;color:var(--text3);font-weight:500}
 .stat-sub{font-size:11px;color:var(--text4);margin-top:4px}
@@ -179,6 +185,8 @@ tr.proj-row:hover .name-text{color:var(--blue)}
       <button class="nav-link" onclick="logout()" style="border:1px solid rgba(255,255,255,.2);padding:5px 12px"><i class="ti ti-logout"></i> 登出</button>
   </div>
 </nav>
+
+<div id="modal-area"></div>
 
 <!-- 主列表頁 -->
 <div class="page active" id="page-list">
@@ -338,6 +346,7 @@ function renderStats(){
   const totB=PROJECTS.reduce((a,p)=>a+Number(p.budget||0),0);
   const totR=PROJECTS.reduce((a,p)=>a+(remain(p)||0),0);
   document.getElementById('stats').innerHTML=`
+    <div class="stat-card action" onclick="openMasterSheetModal()"><i class="ti ti-table-export" style="font-size:20px;color:var(--blue);margin-bottom:6px"></i><div class="stat-lbl">下載總表</div><div class="stat-sub">全專案彙總 Excel</div></div>
     <div class="stat-card"><div class="stat-val">${PROJECTS.length}</div><div class="stat-lbl">專案總數</div><div class="stat-sub">${PROJECTS.filter(p=>p.status==='施工').length} 個施工中</div></div>
     <div class="stat-card"><div class="stat-val" style="color:${PENDING.length>0?'var(--amber)':'inherit'}">${PENDING.length}</div><div class="stat-lbl">待審核申請</div><div class="stat-sub" style="color:${PENDING.length>0?'var(--amber)':'var(--text4)'}">${PENDING.length>0?'需你審核':''}</div></div>
     <div class="stat-card"><div class="stat-val" style="font-size:20px">${totB?fmt(totB):'—'}</div><div class="stat-lbl">預算總額</div></div>
@@ -640,8 +649,7 @@ function exportMgrPDF(projId) {
     td{border:1px solid #DDE1E9;padding:6px 8px;vertical-align:top;font-size:12px;word-break:break-word}
     .title{font-size:16px;font-weight:700;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #1B2A3B}
     .section{font-size:10px;font-weight:700;color:#718096;text-transform:uppercase;letter-spacing:.08em;margin:10px 0 4px;border-left:3px solid #1B2A3B;padding-left:6px}
-    @media screen{body{max-width:900px;margin:24px auto;padding:0 48px}}
-    @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;max-width:none;margin:0;padding:0}}
+    @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
   </style></head><body>
   <div class="title">工作報告</div>
   <table>
@@ -663,7 +671,7 @@ function exportMgrPDF(projId) {
   </table>
   <div class="section">待處置事項</div>
   <table><tr><td style="white-space:pre-wrap;line-height:1.7">${rpt.pending||'—'}</td></tr></table>
-  </body></html>\`;
+  </body></html>`;
   const win=window.open('','_blank');win.document.write(html);win.document.close();setTimeout(()=>win.print(),800);
 }
 
@@ -675,8 +683,8 @@ function exportMgrWord(projId) {
 
   const progRows = (rpt.progress||[]).map(pg=>
     `<tr>
-      <td style="width:3cm;white-space:nowrap;color:#555555;font-size:10pt;padding:4pt 6pt;border:1pt solid #DDE1E9;vertical-align:top">${pg.date}</td>
-      <td style="width:15cm;font-size:11pt;padding:4pt 6pt;border:1pt solid #DDE1E9;vertical-align:top;line-height:1.6">${pg.note}</td>
+      <td style="width:90pt;white-space:nowrap;color:#555555;font-size:10pt;padding:4pt 6pt;border:1pt solid #DDE1E9;vertical-align:top">${pg.date}</td>
+      <td style="font-size:11pt;padding:4pt 6pt;border:1pt solid #DDE1E9;vertical-align:top;line-height:1.6">${pg.note}</td>
     </tr>`
   ).join('') || '<tr><td colspan="2" style="padding:4pt 6pt;border:1pt solid #DDE1E9;color:#999999">尚無進度記錄</td></tr>';
 
@@ -715,8 +723,8 @@ function exportMgrWord(projId) {
     <table><tr><td style="line-height:1.7">${(rpt.requirement||'—').replace(/\n/g,'<br>')}</td></tr></table>
     <span class="section">進度說明</span>
     <table style="table-layout:fixed;width:100%">
-      <colgroup><col style="width:3cm"><col style="width:15cm"></colgroup>
-      <tr><th style="width:3cm">日期</th><th style="width:15cm">說明</th></tr>
+      <colgroup><col style="width:90pt"><col></colgroup>
+      <tr><th style="width:90pt">日期</th><th>說明</th></tr>
       ${progRows}
     </table>
     <span class="section">待處置事項</span>
@@ -734,6 +742,90 @@ function exportMgrWord(projId) {
   showToast('✓ Word 檔案已下載', 'success');
 }
 function switchTab(id,tab){activeTab[id]=tab;renderDetail(id);}
+
+function closeModal() { document.getElementById('modal-area').innerHTML=''; }
+
+/* ══ 專案總表：預覽 + 下載 ══ */
+let _masterData = null;
+
+async function openMasterSheetModal() {
+  document.getElementById('modal-area').innerHTML = `
+    <div class="modal-bg" onclick="void(0)">
+      <div class="modal" style="max-width:920px;width:92vw">
+        <div class="modal-title"><span><i class="ti ti-table-export"></i> 專案總表</span><button class="btn sm" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+        <div id="master-body" style="text-align:center;padding:40px 0;color:var(--text3)"><i class="ti ti-loader" style="font-size:22px;animation:spin 1s linear infinite"></i><div style="margin-top:8px;font-size:12px">載入總表資料中...</div></div>
+      </div>
+    </div>`;
+  await loadMasterSheet();
+}
+
+async function loadMasterSheet() {
+  try {
+    const res = await API.getMasterSheet();
+    if (!res.success) { document.getElementById('master-body').innerHTML = `<div class="empty"><i class="ti ti-alert-circle"></i>${res.error||'載入失敗'}</div>`; return; }
+    _masterData = res;
+    renderMasterPreview(res);
+  } catch(e) {
+    const el = document.getElementById('master-body');
+    if (el) el.innerHTML = `<div class="empty"><i class="ti ti-alert-circle"></i>連線失敗</div>`;
+  }
+}
+
+function renderMasterPreview(res) {
+  const el = document.getElementById('master-body');
+  if (!el) return;
+  const headers = res.headers || [];
+  const rows = res.rows || [];
+  el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:12px;color:var(--text3)">
+      <span>共 ${rows.length} 筆 · 更新時間：${res.updatedAt||'—'}</span>
+      <div style="display:flex;gap:8px">
+        <button class="btn sm" onclick="refreshMasterSheet()"><i class="ti ti-refresh"></i> 重新整理</button>
+        <button class="btn sm pri" onclick="downloadMasterSheet()"><i class="ti ti-download"></i> 下載 Excel(CSV)</button>
+      </div>
+    </div>
+    <div style="max-height:56vh;overflow:auto;border:1px solid var(--border);border-radius:8px">
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead style="position:sticky;top:0;background:var(--bg)">
+          <tr>${headers.map(h=>`<th style="text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap">${h}</th>`).join('')}</tr>
+        </thead>
+        <tbody>
+          ${rows.length ? rows.map(r=>`<tr>${headers.map(h=>`<td style="padding:6px 10px;border-bottom:1px solid var(--border);white-space:nowrap">${r[h]??''}</td>`).join('')}</tr>`).join('')
+            : `<tr><td colspan="${headers.length}" style="padding:20px;text-align:center;color:var(--text4)">目前沒有資料</td></tr>`}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+async function refreshMasterSheet() {
+  const el = document.getElementById('master-body');
+  if (el) el.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--text3)"><i class="ti ti-loader" style="font-size:22px;animation:spin 1s linear infinite"></i><div style="margin-top:8px;font-size:12px">重新整理中...</div></div>`;
+  try {
+    const res = await API.refreshMasterSheet();
+    if (!res.success) { showToast(res.error||'重新整理失敗','error'); }
+    await loadMasterSheet();
+  } catch(e) { showToast('連線失敗','error'); }
+}
+
+function downloadMasterSheet() {
+  if (!_masterData) return;
+  const headers = _masterData.headers || [];
+  const rows = _masterData.rows || [];
+  const esc = v => {
+    const s = (v===undefined||v===null) ? '' : String(v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+  };
+  const lines = [headers.map(esc).join(',')]
+    .concat(rows.map(r => headers.map(h => esc(r[h])).join(',')));
+  const csv = '\uFEFF' + lines.join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `@01各機構需求單彙整表_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 const _s=document.createElement('style');
 _s.textContent='@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}';
