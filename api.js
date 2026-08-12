@@ -138,6 +138,7 @@ const API = {
   // 專案總表
   getMasterSheet:     () => callAPI({ action:'getMasterSheet' }),
   refreshMasterSheet: () => writeAPI('refreshMasterSheet', {}),
+  exportMasterXlsx:   () => callAPI({ action:'exportMasterXlsx' }),
 
   // 工作報告
   getReports:   (projectId) => callAPI({ action:'getReports', projectId }),
