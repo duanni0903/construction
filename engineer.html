@@ -377,6 +377,9 @@ if (_cu) {
 }
 
 // ── 狀態 ──
+// 功能開關：分包商指派功能目前停用，日後要恢復把這個改回 true 即可（不用重寫程式碼）
+const FEATURE_SUBCONTRACTOR_ASSIGN = false;
+
 let PROJECTS  = [];
 let ALL_USERS = [];
 let ENG       = {};
@@ -627,7 +630,7 @@ async function renderDetailPage(id) {
           <button class="btn ghost" onclick="goPage('list')"><i class="ti ti-arrow-left"></i> 返回</button>
           ${own ? `
             <button class="btn ghost" onclick="openEditProjModal('${p.id}')"><i class="ti ti-edit"></i> 編輯</button>
-            <button class="btn ghost" style="background:rgba(255,255,255,.12)" onclick="openAssignModal('${p.id}')"><i class="ti ti-link"></i> 指派分包商</button>
+            ${FEATURE_SUBCONTRACTOR_ASSIGN ? `<button class="btn ghost" style="background:rgba(255,255,255,.12)" onclick="openAssignModal('${p.id}')"><i class="ti ti-link"></i> 指派分包商</button>` : ''}
             ${p.applyStatus==='pending'?`<button class="btn ghost" style="border-color:rgba(250,199,117,.5);color:#FAC775" onclick="doWithdrawProj('${p.id}')"><i class="ti ti-arrow-back-up"></i> 抽回申請</button>`:''}
             ${p.applyStatus==='draft'?`<button class="btn ghost" style="background:rgba(255,255,255,.12)" onclick="doReSendProj('${p.id}')"><i class="ti ti-send"></i> 重新送審</button>`:''}
             ${['draft','rejected'].includes(p.applyStatus)?`<button class="btn ghost" style="border-color:rgba(242,101,101,.5);color:#F7C1C1" onclick="doDeleteProj('${p.id}')"><i class="ti ti-trash"></i> 刪除專案</button>`:''} ` : ''}
@@ -686,7 +689,7 @@ async function renderDetailContent(id, tab, tasks, own, p) {
       </div>
       ${taskRows || `<div class="empty"><i class="ti ti-checklist"></i>尚無工項資料</div>`}
     </div>
-    ${own ? await buildAssignSection(id) : ''}`;
+    ${own && FEATURE_SUBCONTRACTOR_ASSIGN ? await buildAssignSection(id) : ''}`;
 
   } else if (tab==='files') {
     if (!FILES_CACHE[id]) {
@@ -1112,7 +1115,7 @@ async function renderMyProj() {
         <div style="display:flex;gap:6px">
           <button class="btn sm" onclick="goPage('detail','${p.id}')"><i class="ti ti-eye"></i> 詳情</button>
           <button class="btn sm" onclick="openEditProjModal('${p.id}')"><i class="ti ti-edit"></i> 編輯</button>
-          <button class="btn sm pri" onclick="openAssignModal('${p.id}')"><i class="ti ti-link"></i> 指派分包商</button>
+          ${FEATURE_SUBCONTRACTOR_ASSIGN ? `<button class="btn sm pri" onclick="openAssignModal('${p.id}')"><i class="ti ti-link"></i> 指派分包商</button>` : ''}
         </div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px">
