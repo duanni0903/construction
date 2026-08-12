@@ -417,14 +417,11 @@ let filterStatus='全部', filterMgr='', activeTab={}, uploading={}, activeProjI
 // ── 初始載入 ──
 async function init(retry=0) {
   try {
-    // 並行呼叫加快速度
-    const [pr, ur] = await Promise.all([
-      callAPI({action:'getProjects'}),
-      callAPI({action:'getUsers'})
-    ]);
+    // 合併成一次 API 呼叫，減少網路往返（Apps Script 對同一腳本的並行請求常會被排隊執行）
+    const r = await callAPI({action:'getInitData'});
 
-    PROJECTS  = pr.success ? pr.projects : [];
-    ALL_USERS = ur.success ? ur.users    : [];
+    PROJECTS  = r.success ? r.projects : [];
+    ALL_USERS = r.success ? r.users    : [];
     ENG = {};
     ALL_USERS.forEach(u => {
       ENG[u.id] = { name: u.name, role: u.role, cls: avCls(u.id) };
