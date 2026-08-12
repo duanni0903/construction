@@ -70,6 +70,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC',sans
 .b-bid{background:var(--amber-l);color:var(--amber)}
 .b-work{background:var(--blue-l);color:var(--blue)}
 .b-chk{background:var(--green-l);color:var(--green)}
+.b-done{background:var(--green-l);color:var(--green);border:1px solid var(--green)}
+.b-hold{background:var(--red-l);color:var(--red)}
 .b-pending{background:var(--amber-l);color:var(--amber)}
 .b-mine{background:var(--teal-l);color:var(--teal)}
 .b-readonly{background:var(--bg);color:var(--text4);border:1px solid var(--border)}
@@ -386,7 +388,7 @@ let REPORTS_CACHE = {};
 
 const ME = _cu ? _cu.id : '';
 
-const SCLS  = {規劃設計:'b-plan',工程發包:'b-bid',施工:'b-work',驗收:'b-chk'};
+const SCLS  = {規劃設計:'b-plan',工程發包:'b-bid',施工:'b-work',驗收:'b-chk',完工:'b-done',暫緩:'b-hold'};
 const TCOL  = {done:'#0F6E56',doing:'#185FA5',todo:'#A0AEC0'};
 const TLBL  = {done:'已完成',doing:'進行中',todo:'待辦'};
 const EXT_ICO = {pdf:'ti-file-type-pdf',dwg:'ti-vector-triangle',dxf:'ti-vector-triangle',doc:'ti-file-type-doc',docx:'ti-file-type-doc',xls:'ti-file-spreadsheet',xlsx:'ti-file-spreadsheet',jpg:'ti-photo',jpeg:'ti-photo',png:'ti-photo',gif:'ti-photo'};
@@ -494,7 +496,7 @@ function renderAlerts() {
 }
 
 function renderFilters() {
-  const sts = ['全部','規劃設計','工程發包','施工','驗收'];
+  const sts = ['全部','規劃設計','工程發包','施工','驗收','完工','暫緩'];
   const mgrMap = {};
   PROJECTS.forEach(p => { if(p.mgrId && p.mgrName) mgrMap[p.mgrId] = p.mgrName; });
   const mgrChips = Object.entries(mgrMap).map(([id,name]) => {
@@ -1327,7 +1329,7 @@ function openEditProjModal(id) {
           </div>
         </div>
         <div class="field"><label>專案狀態</label>
-          <select id="ep-status">${['規劃設計','工程發包','施工','驗收'].map(s=>`<option${p.status===s?' selected':''}>${s}</option>`).join('')}</select>
+          <select id="ep-status">${['規劃設計','工程發包','施工','驗收','完工','暫緩'].map(s=>`<option${p.status===s?' selected':''}>${s}</option>`).join('')}</select>
         </div>
         <div class="field-row">
           <div class="field"><label>預計進度 %</label><input type="number" id="ep-plan" value="${p.planPct||0}" min="0" max="100"></div>
