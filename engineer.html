@@ -1339,8 +1339,7 @@ function drawNewProj() {
        <div class="field-row">
          <div class="field"><label>估計預算（元）</label><input type="number" id="np-budget" placeholder="0" value="${_npData.budget}"></div>
          <div class="field"><label>優先程度</label><select id="np-pri"><option${_npData.pri==='正常'?' selected':''}>正常</option><option${_npData.pri==='高'?' selected':''}>高</option><option${_npData.pri==='緊急'?' selected':''}>緊急</option></select></div>
-       </div>
-       <div class="alert alert-info" style="margin-top:4px"><i class="ti ti-info-circle" style="font-size:15px;flex-shrink:0"></i><span>申請送出後將通知主管審核，核准後專案才正式建立。</span></div>`;
+       </div>`;
   } else {
     const name = _npData.name||'（未填）';
     const start= _npData.start||'—';
