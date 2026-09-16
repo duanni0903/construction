@@ -141,7 +141,7 @@ const API = {
   exportMasterXlsx:   () => callAPI({ action:'exportMasterXlsx' }),
 
   // 工作報告
-  getReports:   (projectId) => callAPI({ action:'getReports', projectId }),
+  getReports:   (projectId) => callAPI(projectId ? { action:'getReports', projectId } : { action:'getReports' }),
   createReport: (data) => writeAPI('createReport', data),
   updateReport: (data) => writeAPI('updateReport', data),
   deleteReport: (id)   => writeAPI('deleteReport', { id }),
