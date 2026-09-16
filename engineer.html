@@ -878,6 +878,7 @@ async function openCreateReport(projId) {
   try {
     const res = await API.createReport({
       projectId:   projId,
+      caseNo:      p.projNo || '',
       workItem:    p.name,
       dri:         _cu?.name || '',
       requirement: p.requirement || '',
