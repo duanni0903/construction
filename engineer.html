@@ -603,17 +603,8 @@ async function renderDetailPage(id) {
   const nw  = noWork(p);
   const tab = activeTab[id] || 'report';
 
-  // 載入工項（如果尚未快取）
-  if (!TASKS_CACHE[id]) {
-    const tr = await API.getTasks(id);
-    TASKS_CACHE[id] = tr.success ? tr.tasks : [];
-  }
-  const tasks = TASKS_CACHE[id];
-  const done  = tasks.filter(t=>t.status==='done').length;
-  const doing = tasks.filter(t=>t.status==='doing').length;
-  const avg   = taskAvg(tasks);
-  const d     = diff(p);
-
+  // 先渲染不需要等工項資料的部分（專案名稱/狀態/日期/分頁標籤），
+  // 避免切換專案時，畫面在等待 API.getTasks() 期間卡在上一個專案的殘留內容
   document.getElementById('detail-hero-wrap').innerHTML = `
     <div class="detail-hero">
       <div class="detail-hero-top">
@@ -645,8 +636,8 @@ async function renderDetailPage(id) {
     </div>`;
 
   document.getElementById('detail-metrics').innerHTML = `
-    <div class="metric"><div class="metric-lbl">工項進度</div><div class="metric-val">${avg}%</div></div>
-    <div class="metric"><div class="metric-lbl">完成 / 進行 / 待辦</div><div class="metric-val" style="font-size:18px">${done}<span style="color:var(--text4);font-size:14px"> / ${doing} / ${tasks.length-done-doing}</span></div></div>
+    <div class="metric"><div class="metric-lbl">工項進度</div><div class="metric-val">…</div></div>
+    <div class="metric"><div class="metric-lbl">完成 / 進行 / 待辦</div><div class="metric-val" style="font-size:18px">…</div></div>
     <div class="metric"><div class="metric-lbl">預算金額</div><div class="metric-val" style="font-size:${p.budget>=1e8?'14px':p.budget>=1e7?'16px':'18px'}">${p.budget?fmt(p.budget):'—'}</div></div>
     <div class="metric"><div class="metric-lbl">契約金額</div><div class="metric-val" style="font-size:${p.contract>=1e8?'14px':p.contract>=1e7?'16px':'18px'}">${p.contract?fmt(p.contract):'—'}</div></div>
     <div class="metric"><div class="metric-lbl">剩餘預算</div><div class="metric-val" style="font-size:18px;color:${rem!==null&&rem<0?'var(--red)':'inherit'}">${rem!==null?fmt(rem):'—'}</div></div>`;
@@ -665,6 +656,25 @@ async function renderDetailPage(id) {
   ];
   document.getElementById('detail-tabs').innerHTML =
     tabs.map(t=>`<button class="tab${tab===t.k?' active':''}" onclick="switchTab('${id}','${t.k}')"><i class="ti ${t.i}"></i>${t.l}</button>`).join('');
+  document.getElementById('detail-content').innerHTML = `<div class="empty"><i class="ti ti-loader" style="font-size:22px;animation:spin 1s linear infinite"></i></div>`;
+
+  // 載入工項（如果尚未快取）
+  if (!TASKS_CACHE[id]) {
+    const tr = await API.getTasks(id);
+    TASKS_CACHE[id] = tr.success ? tr.tasks : [];
+  }
+  const tasks = TASKS_CACHE[id];
+  const done  = tasks.filter(t=>t.status==='done').length;
+  const doing = tasks.filter(t=>t.status==='doing').length;
+  const avg   = taskAvg(tasks);
+
+  // 工項數字回來後，補上「工項進度」「完成/進行/待辦」這兩塊統計
+  document.getElementById('detail-metrics').innerHTML = `
+    <div class="metric"><div class="metric-lbl">工項進度</div><div class="metric-val">${avg}%</div></div>
+    <div class="metric"><div class="metric-lbl">完成 / 進行 / 待辦</div><div class="metric-val" style="font-size:18px">${done}<span style="color:var(--text4);font-size:14px"> / ${doing} / ${tasks.length-done-doing}</span></div></div>
+    <div class="metric"><div class="metric-lbl">預算金額</div><div class="metric-val" style="font-size:${p.budget>=1e8?'14px':p.budget>=1e7?'16px':'18px'}">${p.budget?fmt(p.budget):'—'}</div></div>
+    <div class="metric"><div class="metric-lbl">契約金額</div><div class="metric-val" style="font-size:${p.contract>=1e8?'14px':p.contract>=1e7?'16px':'18px'}">${p.contract?fmt(p.contract):'—'}</div></div>
+    <div class="metric"><div class="metric-lbl">剩餘預算</div><div class="metric-val" style="font-size:18px;color:${rem!==null&&rem<0?'var(--red)':'inherit'}">${rem!==null?fmt(rem):'—'}</div></div>`;
 
   await renderDetailContent(id, tab, tasks, own, p);
 }
