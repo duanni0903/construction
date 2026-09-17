@@ -25,7 +25,6 @@ const Auth = {
   isAdmin()    { return this.getUser()?.role === 'admin'; },
   isManager()  { return this.getUser()?.role === 'manager'; },
   isEngineer() { return this.getUser()?.role === 'engineer'; },
-  isSub()      { return this.getUser()?.role === 'subcontractor'; },
 };
 
 // ── API 呼叫（fetch + no-cors fallback）─────────────────────────
@@ -188,18 +187,6 @@ const API = {
     callAPI({ action:'getFiles', projectId }),
   uploadFile: (data) => postAPI({ action:'uploadFile', ...data }),
   deleteFile: (id)   => writeAPI('deleteFile', { id }),
-
-  // 分包商指派
-  getAssigns:   (projectId) =>
-    callAPI({ action:'getAssigns', projectId }),
-  createAssign: (data) => writeAPI('createAssign', data),
-  deleteAssign: (id)   => writeAPI('deleteAssign', { id }),
-
-  // 分包商公開（免 token）
-  getAssign: (token) =>
-    callAPI({ action:'getAssign', token }),
-  subFill: (token, data) =>
-    callAPI({ action:'subFill', token, data: JSON.stringify(data) }),
 };
 
 // ── 登入守衛（頁面載入時檢查）──────────────────────────────────
