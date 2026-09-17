@@ -208,10 +208,6 @@ tr.row-other td:first-child{border-left:3px solid transparent}
 .other-proj-row:hover{background:var(--bg)}
 .other-proj-name{font-size:13px;font-weight:500;color:var(--text);display:flex;align-items:center;gap:6px}
 
-/* ── 分包商指派 ── */
-.sub-chip{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--border-l);border-radius:var(--r-sm);padding:10px 14px;margin-bottom:8px}
-.sub-chip:last-child{margin-bottom:0}
-
 /* ── 審核日誌 ── */
 .review-item{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--border-l)}
 .review-item:last-child{border-bottom:none}
@@ -351,8 +347,8 @@ tr.row-other td:first-child{border-left:3px solid transparent}
 <div class="page" id="page-review">
   <div class="page-hd">
     <div>
-      <div class="page-title">審核分包商日誌</div>
-      <div class="page-sub">分包商回報的施工日誌，由你審核後才算數</div>
+      <div class="page-title">審核施工日誌</div>
+      <div class="page-sub">同仁回報的施工日誌，由你審核後才算數</div>
     </div>
   </div>
   <div id="review-content"></div>
@@ -381,16 +377,12 @@ if (_cu) {
 }
 
 // ── 狀態 ──
-// 功能開關：分包商指派功能目前停用，日後要恢復把這個改回 true 即可（不用重寫程式碼）
-const FEATURE_SUBCONTRACTOR_ASSIGN = false;
-
 let PROJECTS  = [];
 let ALL_USERS = [];
 let ENG       = {};
 let TASKS_CACHE  = {};
 let FILES_CACHE  = {};
 let LOGS_CACHE   = {};
-let ASSIGNS_CACHE= {};
 let REPORTS_CACHE = {};
 
 const ME = _cu ? _cu.id : '';
@@ -495,7 +487,7 @@ function renderStats() {
 function renderAlerts() {
   const pendingLogs = PROJECTS.filter(isOwn).reduce((a,p)=>a+(p._pendingLogs||0),0);
   document.getElementById('alert-area').innerHTML = pendingLogs>0
-    ? `<div class="alert alert-warn"><i class="ti ti-bell" style="font-size:16px;flex-shrink:0"></i><span>有 <strong>${pendingLogs}</strong> 筆分包商施工日誌待你審核。<button class="btn sm" style="margin-left:8px" onclick="goPage('review')">前往審核 →</button></span></div>`
+    ? `<div class="alert alert-warn"><i class="ti ti-bell" style="font-size:16px;flex-shrink:0"></i><span>有 <strong>${pendingLogs}</strong> 筆施工日誌待你審核。<button class="btn sm" style="margin-left:8px" onclick="goPage('review')">前往審核 →</button></span></div>`
     : '';
 }
 
@@ -622,7 +614,6 @@ async function renderDetailPage(id) {
           <button class="btn ghost" onclick="goPage('list')"><i class="ti ti-arrow-left"></i> 返回</button>
           ${own ? `
             <button class="btn ghost" onclick="openEditProjModal('${p.id}')"><i class="ti ti-edit"></i> 編輯</button>
-            ${FEATURE_SUBCONTRACTOR_ASSIGN ? `<button class="btn ghost" style="background:rgba(255,255,255,.12)" onclick="openAssignModal('${p.id}')"><i class="ti ti-link"></i> 指派分包商</button>` : ''}
             ${p.applyStatus==='pending'?`<button class="btn ghost" style="border-color:rgba(250,199,117,.5);color:#FAC775" onclick="doWithdrawProj('${p.id}')"><i class="ti ti-arrow-back-up"></i> 抽回申請</button>`:''}
             ${p.applyStatus==='draft'?`<button class="btn ghost" style="background:rgba(255,255,255,.12)" onclick="doReSendProj('${p.id}')"><i class="ti ti-send"></i> 重新送審</button>`:''}
             ${['draft','rejected'].includes(p.applyStatus)?`<button class="btn ghost" style="border-color:rgba(242,101,101,.5);color:#F7C1C1" onclick="doDeleteProj('${p.id}')"><i class="ti ti-trash"></i> 刪除專案</button>`:''} ` : ''}
@@ -709,8 +700,7 @@ async function renderDetailContent(id, tab, tasks, own, p) {
         ${own ? `<button class="btn sm pri" onclick="openAddTaskModal('${id}')"><i class="ti ti-plus"></i> 新增工項</button>` : ''}
       </div>
       ${taskRows || `<div class="empty"><i class="ti ti-checklist"></i>尚無工項資料</div>`}
-    </div>
-    ${own && FEATURE_SUBCONTRACTOR_ASSIGN ? await buildAssignSection(id) : ''}`;
+    </div>`;
 
   } else if (tab==='files') {
     if (!FILES_CACHE[id]) {
@@ -761,40 +751,6 @@ async function renderDetailContent(id, tab, tasks, own, p) {
     : `<div class="section-card"><div class="empty"><i class="ti ti-report-money"></i>尚未填入預算資料</div></div>`;
   }
   document.getElementById('detail-content').innerHTML = html;
-}
-
-async function buildAssignSection(projId) {
-  if (!ASSIGNS_CACHE[projId]) {
-    const ar = await API.getAssigns(projId);
-    ASSIGNS_CACHE[projId] = ar.success ? ar.assigns : [];
-  }
-  const assigns = ASSIGNS_CACHE[projId];
-  return `<div class="section-card">
-    <div class="section-hd">
-      <span class="section-title">分包商指派</span>
-      <button class="btn sm pri" onclick="openAssignModal('${projId}')"><i class="ti ti-plus"></i> 新增指派</button>
-    </div>
-    ${assigns.length ? assigns.map(a=>`
-      <div class="sub-chip">
-        <div style="width:8px;height:8px;border-radius:50%;background:var(--amber);flex-shrink:0"></div>
-        <div style="flex:1"><div style="font-size:13px;font-weight:600">${engName(a.subId)}</div><div style="font-size:11px;color:var(--text4)">指派 ${(a.taskIds||[]).length} 個工項 · 截止 ${a.dueDate||'—'}</div></div>
-        <button class="btn sm" onclick="copyFillLink('${a.token}')"><i class="ti ti-copy"></i> 複製連結</button>
-        <button class="btn sm danger" onclick="doDeleteAssign('${projId}','${a.id}')"><i class="ti ti-trash"></i></button>
-      </div>`).join('')
-    : `<div class="empty" style="padding:1.5rem"><i class="ti ti-users-group"></i>尚未指派分包商</div>`}
-  </div>`;
-}
-
-function copyFillLink(token) {
-  const url = `${window.location.origin}${window.location.pathname.replace('engineer.html','subcontractor.html')}?token=${token}`;
-  navigator.clipboard.writeText(url).then(()=>showToast('連結已複製','success'));
-}
-
-async function doDeleteAssign(projId, id) {
-  if (!confirm('確定移除此指派？')) return;
-  const res = await API.deleteAssign(id);
-  if (res.success) { delete ASSIGNS_CACHE[projId]; showToast('指派已移除','success'); renderDetailPage(projId); }
-  else showToast(res.error||'移除失敗','error');
 }
 
 async function buildReportTab(projId, p, own) {
@@ -1258,7 +1214,6 @@ async function renderMyProj() {
         <div style="display:flex;gap:6px">
           <button class="btn sm" onclick="goPage('detail','${p.id}')"><i class="ti ti-eye"></i> 詳情</button>
           <button class="btn sm" onclick="openEditProjModal('${p.id}')"><i class="ti ti-edit"></i> 編輯</button>
-          ${FEATURE_SUBCONTRACTOR_ASSIGN ? `<button class="btn sm pri" onclick="openAssignModal('${p.id}')"><i class="ti ti-link"></i> 指派分包商</button>` : ''}
         </div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px">
@@ -1609,70 +1564,6 @@ async function doUpdateTask(projId, taskId) {
       delete TASKS_CACHE[projId];
       renderDetailPage(projId);
     } else showToast(res.error||'更新失敗','error');
-  } catch(e) { showToast('連線失敗','error'); }
-}
-
-/* ══ 指派分包商 Modal ══ */
-async function openAssignModal(projId) {
-  const p = PROJECTS.find(x=>x.id===projId); if(!p||!isOwn(p)) return;
-  const tasks = TASKS_CACHE[projId] || [];
-  const subs  = ALL_USERS.filter(u=>u.role==='subcontractor');
-  document.getElementById('modal-area').innerHTML = `
-    <div class="modal-bg" onclick="void(0)">
-      <div class="modal">
-        <div class="modal-title"><span><i class="ti ti-link"></i> 指派分包商</span><button class="btn sm" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
-        <div class="alert alert-info" style="margin-bottom:16px"><i class="ti ti-info-circle" style="font-size:15px;flex-shrink:0"></i><span>指派後系統產生專屬填報連結，分包商無需登入即可填報。</span></div>
-        <div class="field"><label>選擇分包商 *</label>
-          <select id="as-sub">
-            <option value="">請選擇...</option>
-            ${subs.map(u=>`<option value="${u.id}">${u.name}</option>`).join('')}
-          </select>
-        </div>
-        <div class="field"><label>指派工項（可多選）</label>
-          <div style="border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden">
-            ${tasks.filter(t=>t.status!=='done').map(t=>`
-              <label style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border-l);cursor:pointer;font-size:13px">
-                <input type="checkbox" class="as-task" value="${t.id}" style="width:14px;height:14px"> ${t.name}
-                <span style="font-size:11px;color:var(--text4);margin-left:auto">${(t.due||'').slice(5)||'—'}</span>
-              </label>`).join('') || '<div style="padding:12px 14px;font-size:13px;color:var(--text4)">所有工項已完成</div>'}
-          </div>
-        </div>
-        <div class="field"><label>填報截止日</label><input type="date" id="as-due"></div>
-        <div class="field"><label>備註說明</label><textarea id="as-note" placeholder="填報注意事項..."></textarea></div>
-        <button class="submit-btn" id="as-submit" onclick="doCreateAssign('${projId}')"><i class="ti ti-link"></i> 產出填報連結</button>
-      </div>
-    </div>`;
-}
-
-async function doCreateAssign(projId) {
-  const subId  = document.getElementById('as-sub').value;
-  const taskIds= Array.from(document.querySelectorAll('.as-task:checked')).map(c=>c.value);
-  const dueDate= document.getElementById('as-due').value;
-  const note   = document.getElementById('as-note').value;
-  if (!subId) { showToast('請選擇分包商','warn'); return; }
-  setBtnLoading('as-submit', true);
-  try {
-    const res = await API.createAssign({ projectId: projId, subId, taskIds, dueDate, note });
-    if (res.success) {
-      delete ASSIGNS_CACHE[projId];
-      closeModal();
-      const fillUrl = `${window.location.origin}${window.location.pathname.replace('engineer.html','subcontractor.html')}?token=${res.token}`;
-      document.getElementById('modal-area').innerHTML = `
-        <div class="modal-bg" onclick="void(0)">
-          <div class="modal">
-            <div class="modal-title"><span style="color:var(--green)"><i class="ti ti-check-circle"></i> 連結已產出</span><button class="btn sm" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
-            <div class="alert alert-ok"><i class="ti ti-check" style="font-size:15px;flex-shrink:0"></i><span>填報連結已建立，分包商點連結即可直接填報。</span></div>
-            <div style="font-size:12px;font-weight:600;color:var(--text3);margin-bottom:6px">填報連結</div>
-            <div class="link-box">
-              <i class="ti ti-link" style="font-size:14px;color:var(--text4);flex-shrink:0"></i>
-              <span style="font-size:11px;color:var(--text3);font-family:monospace;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${fillUrl}</span>
-              <button class="btn sm" onclick="navigator.clipboard.writeText('${fillUrl}').then(()=>showToast('連結已複製','success'))"><i class="ti ti-copy"></i> 複製</button>
-            </div>
-            <button class="btn pri" style="width:100%;margin-top:14px;justify-content:center" onclick="closeModal()"><i class="ti ti-check"></i> 完成</button>
-          </div>
-        </div>`;
-      showToast('✓ 分包商指派完成','success');
-    } else showToast(res.error||'指派失敗','error');
   } catch(e) { showToast('連線失敗','error'); }
 }
 
