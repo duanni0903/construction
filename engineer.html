@@ -299,6 +299,7 @@ tr.row-other td:first-child{border-left:3px solid transparent}
     <button class="btn pri" onclick="openNewProjModal()"><i class="ti ti-plus"></i> 申請新專案</button>
   </div>
   <div class="master-bar">
+    <button class="master-btn" onclick="updateMasterSheetToLatest()" id="master-refresh-btn"><i class="ti ti-refresh"></i> 更新至最新</button>
     <button class="master-btn" onclick="directDownloadMasterSheet()" id="master-dl-btn"><i class="ti ti-table-export"></i> 下載@01各機構需求單彙整表 <span class="mb-sub">全專案彙總 Excel</span></button>
   </div>
   <div class="stats" id="stats"></div>
@@ -635,9 +636,19 @@ async function renderDetailPage(id) {
       ${!own ? `<div class="readonly-hero-banner"><i class="ti ti-lock" style="font-size:14px;flex-shrink:0"></i><span>你正在檢視 <strong>${e.name||''}</strong> 負責的專案，此頁為唯讀模式。</span></div>` : ''}
     </div>`;
 
+  // 如果這個專案的工項已經快取過，直接算出真實數字，不用顯示任何讀取中畫面
+  const isCached = !!TASKS_CACHE[id];
+  let cachedDone = 0, cachedDoing = 0, cachedAvg = 0, cachedTasks = [];
+  if (isCached) {
+    cachedTasks = TASKS_CACHE[id];
+    cachedDone  = cachedTasks.filter(t=>t.status==='done').length;
+    cachedDoing = cachedTasks.filter(t=>t.status==='doing').length;
+    cachedAvg   = taskAvg(cachedTasks);
+  }
+
   document.getElementById('detail-metrics').innerHTML = `
-    <div class="metric"><div class="metric-lbl">工項進度</div><div class="metric-val">…</div></div>
-    <div class="metric"><div class="metric-lbl">完成 / 進行 / 待辦</div><div class="metric-val" style="font-size:18px">…</div></div>
+    <div class="metric"><div class="metric-lbl">工項進度</div><div class="metric-val">${isCached ? cachedAvg+'%' : '…'}</div></div>
+    <div class="metric"><div class="metric-lbl">完成 / 進行 / 待辦</div><div class="metric-val" style="font-size:18px">${isCached ? `${cachedDone}<span style="color:var(--text4);font-size:14px"> / ${cachedDoing} / ${cachedTasks.length-cachedDone-cachedDoing}</span>` : '…'}</div></div>
     <div class="metric"><div class="metric-lbl">預算金額</div><div class="metric-val" style="font-size:${p.budget>=1e8?'14px':p.budget>=1e7?'16px':'18px'}">${p.budget?fmt(p.budget):'—'}</div></div>
     <div class="metric"><div class="metric-lbl">契約金額</div><div class="metric-val" style="font-size:${p.contract>=1e8?'14px':p.contract>=1e7?'16px':'18px'}">${p.contract?fmt(p.contract):'—'}</div></div>
     <div class="metric"><div class="metric-lbl">剩餘預算</div><div class="metric-val" style="font-size:18px;color:${rem!==null&&rem<0?'var(--red)':'inherit'}">${rem!==null?fmt(rem):'—'}</div></div>`;
@@ -656,7 +667,7 @@ async function renderDetailPage(id) {
   ];
   document.getElementById('detail-tabs').innerHTML =
     tabs.map(t=>`<button class="tab${tab===t.k?' active':''}" onclick="switchTab('${id}','${t.k}')"><i class="ti ${t.i}"></i>${t.l}</button>`).join('');
-  document.getElementById('detail-content').innerHTML = `<div class="empty"><i class="ti ti-loader" style="font-size:22px;animation:spin 1s linear infinite"></i></div>`;
+  if (!isCached) document.getElementById('detail-content').innerHTML = `<div class="empty"><i class="ti ti-loader" style="font-size:22px;animation:spin 1s linear infinite"></i></div>`;
 
   // 載入工項（如果尚未快取）
   if (!TASKS_CACHE[id]) {
@@ -1082,7 +1093,7 @@ async function exportMyProjectsWord() {
       </tr>`;
     }).join('');
 
-    const reportBlocks = reports.length ? reports.map(r => {
+    const reportBlocks = reports.length ? reports.map((r, idx) => {
       const proj = mine.find(p => p.id === r.projectId);
       const progRows = (r.progress||[]).map(pg =>
         `<tr>
@@ -1091,8 +1102,9 @@ async function exportMyProjectsWord() {
         </tr>`
       ).join('') || '<tr><td colspan="2" style="padding:4pt 6pt;border:1pt solid #DDE1E9;color:#999999">尚無進度記錄</td></tr>';
 
+      const pageBreak = idx > 0 ? 'page-break-before:always;mso-page-break-before:always;' : '';
       return `
-        <h2 style="font-size:13pt;font-weight:bold;margin:18pt 0 8pt;padding-top:10pt;border-top:1pt solid #DDE1E9">${proj ? proj.name : r.projectId}</h2>
+        <h2 style="font-size:13pt;font-weight:bold;margin:18pt 0 8pt;padding-top:10pt;border-top:1pt solid #DDE1E9;${pageBreak}">${proj ? proj.name : r.projectId}</h2>
         <table style="width:100%;border-collapse:collapse;margin-bottom:10pt;font-size:10pt">
           <tr><th style="width:65pt;background:#F2F4F7;border:1pt solid #DDE1E9;padding:5pt 7pt;text-align:left;font-weight:bold;font-size:9pt">案件編號</th><td style="border:1pt solid #DDE1E9;padding:5pt 7pt">${r.caseNo||'—'}</td><th style="width:65pt;background:#F2F4F7;border:1pt solid #DDE1E9;padding:5pt 7pt;text-align:left;font-weight:bold;font-size:9pt">供應商</th><td style="border:1pt solid #DDE1E9;padding:5pt 7pt">${r.vendor||'—'}</td></tr>
           <tr><th style="background:#F2F4F7;border:1pt solid #DDE1E9;padding:5pt 7pt;text-align:left;font-weight:bold;font-size:9pt">交辦來源</th><td style="border:1pt solid #DDE1E9;padding:5pt 7pt">${r.source||'—'}</td><th style="background:#F2F4F7;border:1pt solid #DDE1E9;padding:5pt 7pt;text-align:left;font-weight:bold;font-size:9pt">週期</th><td style="border:1pt solid #DDE1E9;padding:5pt 7pt">${r.period||'—'}</td></tr>
@@ -1766,9 +1778,7 @@ async function doChangePw() {
 
 function closeModal() { document.getElementById('modal-area').innerHTML=''; }
 
-/* ══ 專案總表：預覽 + 下載 ══ */
-let _masterData = null;
-
+/* ══ 專案總表：更新 + 下載 ══ */
 async function directDownloadMasterSheet() {
   const btn = document.getElementById('master-dl-btn');
   const originalHtml = btn ? btn.innerHTML : '';
@@ -1794,85 +1804,20 @@ async function directDownloadMasterSheet() {
   }
 }
 
-async function openMasterSheetModal() {
-  document.getElementById('modal-area').innerHTML = `
-    <div class="modal-bg" onclick="void(0)">
-      <div class="modal" style="max-width:920px;width:92vw">
-        <div class="modal-title"><span><i class="ti ti-table-export"></i> @01各機構需求單彙整表</span><button class="btn sm" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
-        <div id="master-body" style="text-align:center;padding:40px 0;color:var(--text3)"><i class="ti ti-loader" style="font-size:22px;animation:spin 1s linear infinite"></i><div style="margin-top:8px;font-size:12px">載入總表資料中...</div></div>
-      </div>
-    </div>`;
-  await loadMasterSheet();
-}
-
-async function loadMasterSheet() {
-  try {
-    const res = await API.getMasterSheet();
-    if (!res.success) { document.getElementById('master-body').innerHTML = `<div class="empty"><i class="ti ti-alert-circle"></i>${res.error||'載入失敗'}</div>`; return; }
-    _masterData = res;
-    renderMasterPreview(res);
-  } catch(e) {
-    const el = document.getElementById('master-body');
-    if (el) el.innerHTML = `<div class="empty"><i class="ti ti-alert-circle"></i>連線失敗</div>`;
-  }
-}
-
-function renderMasterPreview(res) {
-  const el = document.getElementById('master-body');
-  if (!el) return;
-  const headers = res.headers || [];
-  const rows = res.rows || [];
-  el.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:12px;color:var(--text3)">
-      <span>共 ${rows.length} 筆 · 更新時間：${res.updatedAt||'—'}</span>
-      <div style="display:flex;gap:8px">
-        <button class="btn sm" onclick="refreshMasterSheet()"><i class="ti ti-refresh"></i> 重新整理</button>
-        <button class="btn sm pri" onclick="downloadMasterSheet()"><i class="ti ti-download"></i> 下載 Excel(CSV)</button>
-      </div>
-    </div>
-    <div style="max-height:56vh;overflow:auto;border:1px solid var(--border);border-radius:8px">
-      <table style="width:100%;border-collapse:collapse;font-size:12px">
-        <thead style="position:sticky;top:0;background:var(--surface2,#F5F7FA)">
-          <tr>${headers.map(h=>`<th style="text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap">${h}</th>`).join('')}</tr>
-        </thead>
-        <tbody>
-          ${rows.length ? rows.map(r=>`<tr>${headers.map(h=>`<td style="padding:6px 10px;border-bottom:1px solid var(--border);white-space:nowrap">${r[h]??''}</td>`).join('')}</tr>`).join('')
-            : `<tr><td colspan="${headers.length}" style="padding:20px;text-align:center;color:var(--text4)">目前沒有資料</td></tr>`}
-        </tbody>
-      </table>
-    </div>`;
-}
-
-async function refreshMasterSheet() {
-  const el = document.getElementById('master-body');
-  if (el) el.innerHTML = `<div style="text-align:center;padding:40px 0;color:var(--text3)"><i class="ti ti-loader" style="font-size:22px;animation:spin 1s linear infinite"></i><div style="margin-top:8px;font-size:12px">重新整理中...</div></div>`;
+async function updateMasterSheetToLatest() {
+  const btn = document.getElementById('master-refresh-btn');
+  const originalHtml = btn ? btn.innerHTML : '';
+  if (btn) { btn.innerHTML = `<i class="ti ti-loader" style="animation:spin 1s linear infinite"></i> 更新中...`; btn.style.pointerEvents = 'none'; }
   try {
     const res = await API.refreshMasterSheet();
-    if (!res.success) { showToast(res.error||'重新整理失敗','error'); }
-    await loadMasterSheet();
-  } catch(e) { showToast('連線失敗','error'); }
+    if (res.success) showToast('✓ 已更新至最新', 'success');
+    else showToast(res.error||'更新失敗', 'error');
+  } catch(e) {
+    showToast('連線失敗', 'error');
+  } finally {
+    if (btn) { btn.innerHTML = originalHtml; btn.style.pointerEvents = ''; }
+  }
 }
-
-function downloadMasterSheet() {
-  if (!_masterData) return;
-  const headers = _masterData.headers || [];
-  const rows = _masterData.rows || [];
-  const esc = v => {
-    const s = (v===undefined||v===null) ? '' : String(v);
-    return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
-  };
-  const lines = [headers.map(esc).join(',')]
-    .concat(rows.map(r => headers.map(h => esc(r[h])).join(',')));
-  const csv = '\uFEFF' + lines.join('\r\n'); // 加 BOM 避免 Excel 開啟中文亂碼
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `@01各機構需求單彙整表_${new Date().toISOString().slice(0,10)}.csv`;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
 
 function setBtnLoading(id, loading) {
   const btn = document.getElementById(id); if(!btn) return;
