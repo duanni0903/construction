@@ -151,10 +151,10 @@ let USERS    = [];
 let PROJECTS = [];
 
 const SCLS={規劃設計:'b-plan',工程發包:'b-bid',施工:'b-work',驗收:'b-chk'};
-const ROLE_TAG={admin:'tag-admin',manager:'tag-mgr',engineer:'tag-eng',subcontractor:'tag-sub'};
-const ROLE_LBL={admin:'系統管理員',manager:'主管',engineer:'工程師',subcontractor:'分包商'};
-const ROLE_VAL_TO_KEY={工程師:'engineer',主管:'manager',分包商:'subcontractor',系統管理員:'admin'};
-const ROLE_KEY_TO_VAL={engineer:'工程師',manager:'主管',subcontractor:'分包商',admin:'系統管理員'};
+const ROLE_TAG={admin:'tag-admin',manager:'tag-mgr',engineer:'tag-eng'};
+const ROLE_LBL={admin:'系統管理員',manager:'主管',engineer:'工程師'};
+const ROLE_VAL_TO_KEY={工程師:'engineer',主管:'manager',系統管理員:'admin'};
+const ROLE_KEY_TO_VAL={engineer:'工程師',manager:'主管',admin:'系統管理員'};
 const AV_CLS_LIST=['av-a','av-b','av-c','av-d','av-e'];
 const fmt=n=>n?'$'+Number(n).toLocaleString():'—';
 function avCls(id){ const i=parseInt(id.replace(/\D/g,''))||0; return AV_CLS_LIST[i%5]; }
@@ -419,7 +419,7 @@ function openEditUserModal(id){
     `<div class="field-row">
       <div class="field"><label>姓名 *</label><input id="e-name" type="text" value="${u.name}"></div>
       <div class="field"><label>角色 *</label>
-        <select id="e-role">${['工程師','主管','分包商','系統管理員'].map(r=>`<option${ROLE_KEY_TO_VAL[u.role]===r?' selected':''}>${r}</option>`).join('')}</select>
+        <select id="e-role">${['工程師','主管','系統管理員'].map(r=>`<option${ROLE_KEY_TO_VAL[u.role]===r?' selected':''}>${r}</option>`).join('')}</select>
       </div>
     </div>
     <div class="field"><label>Email *</label><input id="e-email" type="email" value="${u.email}"></div>
@@ -515,8 +515,8 @@ async function loadHier() {
   }
 }
 
-const ROLE_LBL_H = {admin:'系統管理員',manager:'主管',engineer:'工程師',subcontractor:'分包商'};
-const ROLE_TAG_H = {admin:'tag-admin',manager:'tag-mgr',engineer:'tag-eng',subcontractor:'tag-sub'};
+const ROLE_LBL_H = {admin:'系統管理員',manager:'主管',engineer:'工程師'};
+const ROLE_TAG_H = {admin:'tag-admin',manager:'tag-mgr',engineer:'tag-eng'};
 
 function renderHier() {
   const el = document.getElementById('page-hier');
